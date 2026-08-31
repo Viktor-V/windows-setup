@@ -157,11 +157,14 @@ chmod 440 /etc/sudoers.d/$linuxUser
 usermod -s /usr/bin/fish '$linuxUser'
 "@
 
-Write-Host " -> Installing latest Zellij release..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_zellij.sh")
+Write-Host " -> Installing Yazi file manager..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_yazi.sh")
 
-Write-Host " -> Installing latest OhMyPosh release..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_oh_my_posh.sh")
+Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
+
+Write-Host " -> Installing dblab database client..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dblab.sh")
 
 Write-Host " -> Installing Docker Engine with plugins..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_docker.sh")

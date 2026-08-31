@@ -12,8 +12,8 @@ mkdir -p /root/.config/fish
 mkdir -p "/home/$USER_NAME/.config/fish"
 
 cat > /root/.config/fish/config.fish <<'EOF'
-if type -q oh-my-posh
-    oh-my-posh init fish --config jandedobbeleer | source
+if type -q starship
+    starship init fish | source
 end
 EOF
 
