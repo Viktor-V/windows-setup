@@ -220,7 +220,7 @@ Write-Host "[STEP 8] Creating PowerShell administrator shortcut..." -ForegroundC
 
 Write-Host "[OK] PowerShell admin shortcut created on desktop" -ForegroundColor Green
 
-Write-Host "[STEP 9] Creating WSL2 direct launch shortcuts..." -ForegroundColor Cyan
+Write-Host "[STEP 9] Creating WezTerm WSL2 shortcut with Fish..." -ForegroundColor Cyan
 
 # Function to create WSL shortcuts
 function New-WSLShortcut {
@@ -261,34 +261,16 @@ function New-WSLShortcut {
     }
 }
 
-# Create WSL2 direct launch shortcut (opens Fish shell in WSL2)
+# Create WezTerm with WSL2 shortcut that launches Fish directly
 New-WSLShortcut `
-    -ShortcutName "WSL2 Fish" `
-    -TargetPath "wsl.exe" `
-    -Arguments "-d Debian -u viktorv --cd ~" `
-    -WorkingDirectory "$env:USERPROFILE" `
-    -IconLocation "%SystemRoot%\\System32\\bash.exe,0" `
-    -AddToStartup $false
-
-# Create WezTerm with WSL2 shortcut
-New-WSLShortcut `
-    -ShortcutName "WezTerm WSL2" `
+    -ShortcutName "WezTerm WSL2 (Fish)" `
     -TargetPath "$env:LOCALAPPDATA\\Programs\\wezterm\\wezterm.exe" `
-    -Arguments "--start -d \\\\wsl.\\\\\$\\Debian\\home\\viktorv" `
+    -Arguments "start fish" `
     -WorkingDirectory "$env:USERPROFILE" `
     -IconLocation "%SystemRoot%\\System32\\shell32.dll,240" `
     -AddToStartup $false
 
-# Create a simple WSL2 bash shortcut
-New-WSLShortcut `
-    -ShortcutName "WSL2 Bash" `
-    -TargetPath "wsl.exe" `
-    -Arguments "-d Debian -u viktorv" `
-    -WorkingDirectory "$env:USERPROFILE" `
-    -IconLocation "%SystemRoot%\\System32\\bash.exe,0" `
-    -AddToStartup $false
-
-Write-Host "[OK] WSL2 direct launch shortcuts created" -ForegroundColor Green
+Write-Host "[OK] WezTerm WSL2 shortcut with Fish created" -ForegroundColor Green
 
 Write-Host "[STEP 10] Enabling WSL subsystem for Phase 2..." -ForegroundColor Cyan
 wsl --install --no-distribution
