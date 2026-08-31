@@ -145,7 +145,82 @@ Write-Host "Welcome to PowerShell!" -ForegroundColor Green
 
 Set-Content -Path "$pDir\Microsoft.PowerShell_profile.ps1" -Value $profileContent -Encoding utf8
 
-Write-Host "[STEP 8] Enabling WSL subsystem for Phase 2..." -ForegroundColor Cyan
+# Create PowerShell admin profile for elevated tasks
+$adminProfileContent = @"
+# PowerShell Admin Profile
+# For elevated dev environment tasks
+
+# Check if running as admin, if not, relaunch as admin
+\$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+\$windowsPrincipal = New-Object Security.Principal.WindowsPrincipal(\$currentIdentity)
+\$isAdmin = \$windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not \$isAdmin) {
+    Write-Host "Relaunching PowerShell with administrator privileges..." -ForegroundColor Yellow
+    # Relaunch as administrator
+    Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "' + \$MyInvocation.MyCommand.Path + '"'
+    Exit
+}
+
+# Admin-specific environment setup
+Write-Host "Running with administrator privileges" -ForegroundColor Green
+
+# Add useful aliases for admin tasks
+Set-Alias -Name ll -Value 'ls -lah' -Option AllScope
+Set-Alias -Name gs -Value 'git status' -Option AllScope
+Set-Alias -Name gc -Value 'git commit' -Option AllScope
+
+# WSL2 management helpers
+function Restart-WSL {
+    Write-Host "Restarting WSL..." -ForegroundColor Cyan
+    wsl --shutdown
+    Start-Sleep -Seconds 2
+    wsl -d Debian
+}
+
+function WSL-IP {
+    wsl hostname -I
+}
+
+# Show welcome message
+Write-Host "" 
+Write-Host "=== Dev Environment Admin PowerShell ===" -ForegroundColor Cyan
+Write-Host "Useful commands:" -ForegroundColor Yellow
+Write-Host "  Restart-WSL     - Restart WSL subsystem" -ForegroundColor White
+Write-Host "  WSL-IP          - Get WSL IP address" -ForegroundColor White
+Write-Host "  gs              - Git status" -ForegroundColor White
+Write-Host "  gc              - Git commit" -ForegroundColor White
+Write-Host "  ll              - Detailed directory listing" -ForegroundColor White
+Write-Host "=====================================" -ForegroundColor Cyan
+Write-Host ""
+"@
+
+$adminProfileDir = Join-Path $HOME "Documents\Windows PowerShell"
+if (-not (Test-Path $adminProfileDir)) {
+    New-Item -ItemType Directory -Path $adminProfileDir -Force | Out-Null
+}
+Set-Content -Path (Join-Path $adminProfileDir "profile.ps1") -Value $adminProfileContent -Encoding utf8
+
+Write-Host "[OK] PowerShell admin profile configured" -ForegroundColor Green
+
+Write-Host "[STEP 8] Creating PowerShell administrator shortcut..." -ForegroundColor Cyan
+
+# Create a desktop shortcut for PowerShell that runs as administrator
+\$desktopPath = [Environment]::GetFolderPath('Desktop')
+\$shortcutPath = Join-Path \$desktopPath "DevSetup PowerShell Admin.lnk"
+
+\$wshell = New-Object -ComObject WScript.Shell
+\$shortcut = \$wshell.CreateShortcut(\$shortcutPath)
+\$shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+\$shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass"
+\$shortcut.WorkingDirectory = "$env:USERPROFILE"
+\$shortcut.Description = "PowerShell with admin privileges for dev environment tasks"
+\$shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,176"
+\$shortcut.Save()
+
+Write-Host "[OK] PowerShell admin shortcut created on desktop" -ForegroundColor Green
+
+Write-Host "[STEP 9] Enabling WSL subsystem for Phase 2..." -ForegroundColor Cyan
 wsl --install --no-distribution
 
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
