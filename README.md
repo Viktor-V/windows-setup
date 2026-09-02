@@ -1,0 +1,67 @@
+# windows-setup
+
+Automated setup script for Windows 11 development environment.
+
+## What it does
+
+This project automates the complete configuration of a Windows 11 machine for development purposes, consisting of two main phases:
+
+### Phase 1: Windows Configuration
+- Removes bloatware and unnecessary Windows apps
+- Installs essential applications via Winget (ImageGlass, VLC, Steam, Git, etc.)
+- Applies visual customizations (black theme, disabled lock screen, etc.)
+- Downloads and installs **WezTerm** terminal with **Inconsolata Nerd Font**
+- Creates PowerShell admin profile with auto-elevation
+- Creates desktop shortcuts for quick access:
+  - `WezTerm WSL2 (Fish)` - Opens WezTerm with Fish shell and Starship prompt
+- Creates WSL2 filesystem layout and configures Inconsolata Nerd Font system-wide
+
+### Phase 2: WSL2 & Linux Environment
+- Sets up **Debian WSL2** distribution with Fish shell
+- Installs base packages: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, etc.
+- Installs development tools: **Yazi** file manager, **Starship** prompt, **dblab** TUI database client
+- Configures **Fish** shell with Starship integration and useful aliases
+- Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
+- Terminates and restarts WSL2 to apply configuration
+
+## Prerequisites
+- Windows 10/11
+- Administrator privileges to run setup.ps1
+- Internet connection for downloading packages
+
+## Quick Start
+
+1. Run `setup.ps1` as Administrator:
+   ```powershell
+   .\setup.ps1
+   ```
+
+2. Enter password when prompted (for WSL user 'viktorv')
+
+3. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
+
+4. After reboot, login to Windows and the setup will automatically continue with Phase 2
+
+5. Once complete:
+   - Portainer UI at http://localhost:9000
+   - Open Debian terminal to see Fish + Inconsolata Font
+   - Login: viktorv
+
+## Projects & Tools Installed
+
+### Windows Applications
+- ImageGlass, VLC, Steam, Flow-Launcher, GlazeWM, Git, Windows Terminal
+
+### Linux/WSL2 Tools
+- Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo
+- File manager: Yazi
+- Prompt: Starship
+- Database client: dblab
+- Container management: Docker, Portainer
+
+## Folder Structure
+- `setup/` - Main setup scripts
+  - `phase1-windows.ps1` - Windows configuration and app installation
+  - `phase2-wsl.ps1` - WSL2 and Linux environment setup
+  - `scripts/` - Individual installation scripts
+- `autounattend.xml` - Windows unattended installation file
