@@ -83,6 +83,10 @@
 					<Order>1</Order>
 					<CommandLine>powershell.exe -WindowStyle "Normal" -ExecutionPolicy "Unrestricted" -NoProfile -File "C:\Windows\Setup\Scripts\FirstLogon.ps1"</CommandLine>
 				</SynchronousCommand>
+				<SynchronousCommand wcm:action="add">
+					<Order>2</Order>
+					<CommandLine>powershell.exe -WindowStyle "Normal" -ExecutionPolicy "Unrestricted" -NoProfile -File "C:\Windows\Setup\Scripts\DownloadAndRunSetup.ps1"</CommandLine>
+				</SynchronousCommand>
 			</FirstLogonCommands>
 		</component>
 	</settings>
@@ -884,6 +888,80 @@ $scripts = @(
     $complete += $increment;
   }
 } *&gt;&amp;1 | Out-String -Width 1KB -Stream &gt;&gt; "C:\Windows\Setup\Scripts\FirstLogon.log";
+		</File>
+		<File path="C:\Windows\Setup\Scripts\DownloadAndRunSetup.ps1">
+$repoUrl = 'https://github.com/Viktor-V/windows-setup/archive/refs/heads/main.zip';
+$stageDir = Join-Path $env:USERPROFILE 'DevSetup';
+$zipPath = Join-Path $stageDir 'windows-setup.zip';
+$extractDir = Join-Path $stageDir 'extracted';
+$logFile = Join-Path $stageDir 'download.log';
+
+function Write-Log {
+    param([string]$Message)
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss';
+    $line = "[$timestamp] $Message";
+    Write-Host $line;
+    Add-Content -LiteralPath $logFile -Value $line -ErrorAction 'SilentlyContinue';
+}
+
+New-Item -Path $stageDir -ItemType Directory -Force | Out-Null;
+
+Write-Host '';
+Write-Host '========================================' -ForegroundColor Cyan;
+Write-Host '  Dev Environment Setup - Auto Launcher' -ForegroundColor Cyan;
+Write-Host '========================================' -ForegroundColor Cyan;
+Write-Host '';
+
+Write-Log 'Waiting for internet connection...';
+while (-not (Test-Connection -ComputerName 1.1.1.1 -Count 1 -Quiet)) {
+    Write-Host ' -> No internet connection. Please connect to a network and wait...' -ForegroundColor Yellow;
+    Write-Log 'No internet. Waiting 10 seconds...';
+    Start-Sleep -Seconds 10;
+}
+Write-Log 'Internet connection established.';
+
+if (Test-Path $extractDir) {
+    Remove-Item -LiteralPath $extractDir -Recurse -Force;
+}
+
+Write-Log "Downloading repository from $repoUrl...";
+try {
+    Invoke-WebRequest -Uri $repoUrl -OutFile $zipPath -UseBasicParsing;
+}
+catch {
+    Write-Host "[ERROR] Failed to download repository: $_" -ForegroundColor Red;
+    Write-Log "Download failed: $_";
+    exit 1;
+}
+
+Write-Log 'Extracting archive...';
+Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force;
+
+$repoRoot = Get-ChildItem -LiteralPath $extractDir -Directory | Select-Object -First 1;
+$setupScript = Join-Path $repoRoot.FullName 'setup\setup.ps1';
+
+if (-not (Test-Path $setupScript)) {
+    Write-Host "[ERROR] setup.ps1 not found in downloaded archive at $setupScript" -ForegroundColor Red;
+    Write-Log "setup.ps1 not found at $setupScript";
+    exit 1;
+}
+
+Write-Log "Found setup.ps1 at $setupScript";
+
+$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent();
+$windowsPrincipal = New-Object Security.Principal.WindowsPrincipal($currentIdentity);
+$isAdmin = $windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator);
+
+if (-not $isAdmin) {
+    Write-Host 'Relaunching as Administrator...' -ForegroundColor Yellow;
+    Write-Log 'Current process is not elevated. Relaunching as Administrator...';
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $setupScript + '"';
+    Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $arguments -WorkingDirectory (Split-Path -Parent $setupScript);
+    exit 0;
+}
+
+Write-Log 'Already running as Administrator. Executing setup.ps1...';
+&amp; $setupScript;
 		</File>
 	</Extensions>
 </unattend>
