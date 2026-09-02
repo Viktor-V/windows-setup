@@ -34,10 +34,16 @@ New-Item -Path $stageDir -ItemType Directory -Force | Out-Null
 
 # Ask for password only on the first run, or when the saved password is missing
 $passwordFile = Join-Path $stageDir "password.sec"
+$usernameFile = Join-Path $stageDir "username.txt"
 
-if (-not $SkipPhase1 -or -not (Test-Path $passwordFile)) {
+if (-not $SkipPhase1 -or -not (Test-Path $passwordFile) -or -not (Test-Path $usernameFile)) {
     Write-Host "`n[SECURITY] Creating WSL user account" -ForegroundColor Yellow
-    Write-Host "Enter password for user 'viktorv':" -ForegroundColor White
+    $Username = Read-Host "Enter username for WSL (default: user)"
+    if ([string]::IsNullOrWhiteSpace($Username)) {
+        $Username = "user"
+    }
+    Write-Host "Using username: $Username" -ForegroundColor Green
+    Write-Host "Enter password for user '$Username':" -ForegroundColor White
 
     $securePassword = Read-Host -AsSecureString
     $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
@@ -54,6 +60,8 @@ if (-not $SkipPhase1 -or -not (Test-Path $passwordFile)) {
     $securePassword |
         ConvertFrom-SecureString |
         Out-File -FilePath $passwordFile -Force
+
+    $Username | Out-File -FilePath $usernameFile -Force
 
     Write-Host "[OK] Password saved for Phase 2" -ForegroundColor Green
 }
@@ -158,15 +166,19 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         )
     }
     elseif (-not $password) {
-        Write-Host "Enter password for user 'viktorv':" -ForegroundColor White
+        Write-Host "Enter password for user '$Username':" -ForegroundColor White
         $securePassword = Read-Host -AsSecureString
         $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
             [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
         )
     }
 
+    if (Test-Path $usernameFile) {
+        $Username = Get-Content $usernameFile | Select-Object -First 1
+    }
+
     try {
-        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password
+        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username
 
         if (-not $?) {
             throw "Phase 2 script returned an error."
@@ -196,7 +208,7 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         Write-Host "====================================================" -ForegroundColor Green
         Write-Host " 1. Portainer UI is live at http://localhost:9000" -ForegroundColor Cyan
         Write-Host " 2. Open Debian terminal to see Fish + Inconsolata Font!" -ForegroundColor Cyan
-        Write-Host " 3. Login: viktorv" -ForegroundColor Cyan
+        Write-Host " 3. Login: $Username" -ForegroundColor Cyan
         Write-Host "====================================================" -ForegroundColor Green
     }
     catch {

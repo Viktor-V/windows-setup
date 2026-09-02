@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+USER_NAME="${USER_NAME:-user}"
+
 echo "Setting up Docker repository..."
 apt-get update
 apt-get install -y ca-certificates curl
@@ -15,8 +17,8 @@ echo "Installing Docker packages..."
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-echo "Adding user viktorv to docker group..."
-usermod -aG docker viktorv
+echo "Adding user ${USER_NAME} to docker group..."
+usermod -aG docker ${USER_NAME}
 
 echo "Starting Docker service..."
 service docker start

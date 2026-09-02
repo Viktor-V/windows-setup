@@ -32,20 +32,22 @@ This project automates the complete configuration of a Windows 11 machine for de
 ## Quick Start
 
 1. Run `setup.ps1` as Administrator:
-   ```powershell
-   .\setup.ps1
-   ```
+    ```powershell
+    .\setup.ps1
+    ```
 
-2. Enter password when prompted (for WSL user 'viktorv')
+2. Enter username when prompted (press Enter for default: user)
 
-3. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
+3. Enter password when prompted
 
-4. After reboot, login to Windows and the setup will automatically continue with Phase 2
+4. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
 
-5. Once complete:
+5. After reboot, login to Windows and the setup will automatically continue with Phase 2
+
+6. Once complete:
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + Inconsolata Font
-   - Login: viktorv
+   - Login with your chosen username
 
 ## Projects & Tools Installed
 

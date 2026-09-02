@@ -1,12 +1,14 @@
 # phase2-wsl.ps1 - WSL Environment & Development Tools
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Password
+    [string]$Password,
+    [Parameter(Mandatory = $true)]
+    [string]$Username
 )
 
 $ErrorActionPreference = "Stop"
 $distroName = "Debian"
-$linuxUser = "viktorv"
+$linuxUser = $Username
 
 function Invoke-Wsl {
     param(
@@ -98,13 +100,13 @@ if (-not $debianReady) {
 Write-Host "[STEP 7] Provisioning Linux environment layers..." -ForegroundColor Cyan
 
 # Write a valid /etc/wsl.conf using a Base64-safe Bash command.
-$wslConfig = @'
+$wslConfig = @"
 [boot]
 systemd=true
 
 [user]
-default=viktorv
-'@
+default=$linuxUser
+"@
 
 $wslConfigBase64 = [Convert]::ToBase64String(
     [System.Text.Encoding]::UTF8.GetBytes($wslConfig)
@@ -152,9 +154,9 @@ if ! id '$linuxUser' >/dev/null 2>&1; then
 fi
 
 echo '${linuxUser}:${shellPassword}' | chpasswd
-echo '$linuxUser ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$linuxUser
-chmod 440 /etc/sudoers.d/$linuxUser
-usermod -s /usr/bin/fish '$linuxUser'
+echo '${linuxUser} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/${linuxUser}
+chmod 440 /etc/sudoers.d/${linuxUser}
+usermod -s /usr/bin/fish '${linuxUser}'
 "@
 
 Write-Host " -> Installing Yazi file manager..." -ForegroundColor Cyan

@@ -1,12 +1,7 @@
 #!/bin/bash
 set -e
 
-USER_NAME="${1:-viktorv}"
-
-if ! id "$USER_NAME" >/dev/null 2>&1; then
-    echo "User '$USER_NAME' does not exist."
-    exit 1
-fi
+USER_NAME="${1:-user}"
 
 mkdir -p /root/.config/fish
 mkdir -p "/home/$USER_NAME/.config/fish"
@@ -55,6 +50,8 @@ fish_add_path /usr/local/go/bin
 # Enable vi mode
 fish_vi_key_bindings
 EOF
+
+sed -i "s/viktorv/$USER_NAME/g" /root/.config/fish/config.fish
 
 cp /root/.config/fish/config.fish \
    "/home/$USER_NAME/.config/fish/config.fish"
