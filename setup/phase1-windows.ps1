@@ -272,7 +272,33 @@ New-WSLShortcut `
 
 Write-Host "[OK] WezTerm WSL2 shortcut with Fish created" -ForegroundColor Green
 
-Write-Host "[STEP 10] Enabling WSL subsystem for Phase 2..." -ForegroundColor Cyan
-wsl --install --no-distribution
+Write-Host "[STEP 10] Checking WSL2 prerequisites..." -ForegroundColor Cyan
+
+$wslFeatures = @(
+    @{ Name = 'Microsoft-Windows-Subsystem-for-Linux'; Label = 'WSL' },
+    @{ Name = 'VirtualMachinePlatform'; Label = 'Virtual Machine Platform' },
+    @{ Name = 'HypervisorPlatform'; Label = 'Hypervisor Platform' }
+)
+
+foreach ($feature in $wslFeatures) {
+    $state = (Get-WindowsOptionalFeature -FeatureName $feature.Name -Online -ErrorAction SilentlyContinue).State
+    if ($state -ne 'Enabled') {
+        Write-Host " -> Enabling $($feature.Label)..." -ForegroundColor Yellow
+        Enable-WindowsOptionalFeature -FeatureName $feature.Name -Online -All -NoRestart -ErrorAction SilentlyContinue | Out-Null
+    } else {
+        Write-Host " -> $($feature.Label) already enabled." -ForegroundColor Green
+    }
+}
+
+$virtEnabled = (Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue).VirtualizationEnabled
+if (-not $virtEnabled) {
+    Write-Host "[WARNING] Hardware virtualization (VT-x/AMD-V) is disabled in BIOS." -ForegroundColor Red
+    Write-Host "  WSL2 will not work until you enable it in your BIOS/UEFI settings." -ForegroundColor Yellow
+} else {
+    Write-Host " -> Hardware virtualization is enabled." -ForegroundColor Green
+}
+
+Write-Host " -> Setting WSL default version to 2..." -ForegroundColor Yellow
+wsl --set-default-version 2 | Out-Null
 
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
