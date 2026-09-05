@@ -168,7 +168,7 @@ if (-not $SkipPhase1) {
 # PHASE 2: WSL & Dev Tools
 $phase1Marker = Join-Path $stageDir "phase1_done.txt"
 
-if (-not $SkipPhase2 -and (Test-Path $phase1Marker)) {
+if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
     Write-Host "`n====================================================" -ForegroundColor Cyan
     Write-Host "   PHASE 2: WSL Environment & Development Tools" -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
