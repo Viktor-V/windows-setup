@@ -202,6 +202,9 @@ echo 'Docker daemon did not become ready.' >&2
 exit 1
 "@
 
+Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh")
+
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 

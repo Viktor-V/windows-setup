@@ -62,6 +62,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer
+- CLI: OpenCode
 
 ## Folder Structure
 - `setup/` - Main setup scripts
