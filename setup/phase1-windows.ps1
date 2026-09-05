@@ -282,6 +282,7 @@ foreach ($feature in $wslFeatures) {
     if ($state -ne 'Enabled') {
         Write-Host " -> Enabling $($feature.Label)..." -ForegroundColor Yellow
         Enable-WindowsOptionalFeature -FeatureName $feature.Name -Online -All -NoRestart -ErrorAction SilentlyContinue | Out-Null
+        Write-Host "   $($feature.Label) enabled. Reboot required to apply changes." -ForegroundColor Cyan
     } else {
         Write-Host " -> $($feature.Label) already enabled." -ForegroundColor Green
     }

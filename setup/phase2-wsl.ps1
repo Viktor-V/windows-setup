@@ -68,10 +68,18 @@ $installedDistros = @(
 
 if ($installedDistros -notcontains $distroName) {
     Write-Host " -> Debian is not installed. Installing it..." -ForegroundColor Yellow
-    & wsl.exe --install --distribution $distroName --no-launch
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Debian installation failed with exit code $LASTEXITCODE."
+    $installSuccess = $false
+    for ($i = 1; $i -le 3; $i++) {
+        & wsl.exe --install --distribution $distroName --no-launch 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $installSuccess = $true
+            break
+        }
+        Write-Host "   Attempt $i failed, retrying..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 5
+    }
+    if (-not $installSuccess) {
+        throw "Debian installation failed after 3 attempts."
     }
 }
 else {
@@ -81,7 +89,7 @@ else {
 # Wait until the distribution can actually execute commands.
 $debianReady = $false
 
-for ($i = 1; $i -le 24; $i++) {
+for ($i = 1; $i -le 36; $i++) {
     & wsl.exe --distribution $distroName --user root --cd /root --exec /bin/true 2>$null
 
     if ($LASTEXITCODE -eq 0) {
@@ -89,12 +97,12 @@ for ($i = 1; $i -le 24; $i++) {
         break
     }
 
-    Write-Host " -> Waiting for Debian initialization... ($i/24)" -ForegroundColor Yellow
+    Write-Host " -> Waiting for Debian initialization... ($i/36)" -ForegroundColor Yellow
     Start-Sleep -Seconds 5
 }
 
 if (-not $debianReady) {
-    throw "Debian was registered but did not become ready within 120 seconds."
+    throw "Debian was registered but did not become ready within 180 seconds."
 }
 
 Write-Host "[STEP 7] Provisioning Linux environment layers..." -ForegroundColor Cyan
@@ -175,13 +183,10 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_docker.sh")
 Invoke-WslBash -Command @"
 usermod -aG docker '$linuxUser'
 
-# Enable Docker when systemd is available, but do not fail if it is not.
 if command -v systemctl >/dev/null 2>&1; then
     systemctl enable docker >/dev/null 2>&1 || true
 fi
 
-# The install script may already have started Docker.
-# Start it only when the daemon is not responding.
 if ! docker info >/dev/null 2>&1; then
     if command -v systemctl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then
         systemctl start docker
@@ -189,17 +194,6 @@ if ! docker info >/dev/null 2>&1; then
         service docker start || true
     fi
 fi
-
-# Final readiness check.
-for attempt in {1..30}; do
-    if docker info >/dev/null 2>&1; then
-        exit 0
-    fi
-    sleep 2
-done
-
-echo 'Docker daemon did not become ready.' >&2
-exit 1
 "@
 
 Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan

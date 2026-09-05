@@ -51,7 +51,7 @@ New-Item -Path $stageDir -ItemType Directory -Force | Out-Null
 $passwordFile = Join-Path $stageDir "password.sec"
 $usernameFile = Join-Path $stageDir "username.txt"
 
-if (-not $SkipPhase1 -or -not (Test-Path $passwordFile) -or -not (Test-Path $usernameFile)) {
+if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $usernameFile))) {
     Write-Host "`n[SECURITY] Creating WSL user account" -ForegroundColor Yellow
     $Username = Read-Host "Enter username for WSL (default: user)"
     if ([string]::IsNullOrWhiteSpace($Username)) {
@@ -168,7 +168,7 @@ if (-not $SkipPhase1) {
 # PHASE 2: WSL & Dev Tools
 $phase1Marker = Join-Path $stageDir "phase1_done.txt"
 
-if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
+if (-not $SkipPhase2 -and (Test-Path $phase1Marker)) {
     Write-Host "`n====================================================" -ForegroundColor Cyan
     Write-Host "   PHASE 2: WSL Environment & Development Tools" -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
@@ -222,7 +222,7 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         Write-Host " SUCCESS! Everything is fully installed and configured." -ForegroundColor Green
         Write-Host "====================================================" -ForegroundColor Green
         Write-Host " 1. Portainer UI is live at http://localhost:9000" -ForegroundColor Cyan
-        Write-Host " 2. Open Debian terminal to see Fish + Inconsolata Font!" -ForegroundColor Cyan
+        Write-Host " 2. Open Debian terminal to see Fish + JetBrains Mono Font!" -ForegroundColor Cyan
         Write-Host " 3. Login: $Username" -ForegroundColor Cyan
         Write-Host "====================================================" -ForegroundColor Green
     }
