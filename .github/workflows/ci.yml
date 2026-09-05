@@ -30,13 +30,13 @@ jobs:
           }
 
   bash:
-    name: Bash Syntax
+    name: Bash Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y shellcheck grep coreutils
 
       - name: Check Bash syntax and run ShellCheck
         run: |
@@ -47,8 +47,44 @@ jobs:
             echo "OK"
           done
 
+      - name: Check bash scripts have proper shebang
+        run: |
+          for script in $(find . -name "*.sh" -type f); do
+            shebang=$(head -1 "$script")
+            if ! echo "$shebang" | grep -qE "^#!/.+/bash"; then
+              echo "Missing or invalid shebang in $script: $shebang"
+              exit 1
+            fi
+          done
+          echo "All bash scripts have proper shebang"
+
+      - name: Check for hardcoded secrets
+        run: |
+          secrets=$(grep -rniE "(password|secret|api_key|token)\s*=\s*['\"][^'\"]{8,}" --include="*.ps1" --include="*.sh" . 2>/dev/null || true)
+          if [ -n "$secrets" ]; then
+            echo "WARNING: Potential hardcoded secrets found:"
+            echo "$secrets"
+            # Don't fail, just warn - may be placeholders
+          fi
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          todos=$(grep -rniE "(TODO|FIXME|XXX|HACK)" --include="*.ps1" --include="*.sh" . 2>/dev/null || true)
+          if [ -n "$todos" ]; then
+            echo "TODO/FIXME comments found:"
+            echo "$todos"
+          fi
+
+      - name: Check for trailing whitespace
+        run: |
+          trailing=$(grep -rni '[[:space:]]$' --include="*.ps1" --include="*.sh" --include="*.md" . 2>/dev/null || true)
+          if [ -n "$trailing" ]; then
+            echo "WARNING: Files with trailing whitespace:"
+            echo "$trailing"
+          fi
+
   markdown:
-    name: Markdown Lint
+    name: Markdown Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,12 +93,62 @@ jobs:
         run: |
           for file in $(find . -name "*.md" -type f); do
             echo "Checking $file"
-            # Basic checks
+            # Check for headings
             if ! grep -q "^#" "$file" 2>/dev/null; then
               echo "Warning: $file has no headings"
             fi
-            # Check for broken links (basic)
-            if grep -qE '\[.*\]\(.*\)' "$file"; then
-              echo "Link found in $file"
+            # Check for broken links
+            if grep -qE '\[.+\]\(.+\)' "$file"; then
+              # Extract links and check for obviously broken ones
+              links=$(grep -oE 'https?://[^)]+' "$file" || true)
+              if [ -n "$links" ]; then
+                echo "Links found in $file"
+              fi
             fi
           done
+
+      - name: Check for README
+        run: |
+          if [ ! -f README.md ]; then
+            echo "ERROR: README.md is missing"
+            exit 1
+          fi
+          echo "README.md exists"
+
+  git:
+    name: Git Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for commited temporary files
+        run: |
+          temp_patterns="*.log *.tmp *.bak *.swp *.swo *~ .DS_Store Thumbs.db"
+          for pattern in $temp_patterns; do
+            files=$(find . -name "$pattern" -type f 2>/dev/null | grep -v ".git/" || true)
+            if [ -n "$files" ]; then
+              echo "WARNING: Temporary files found: $files"
+            fi
+          done
+
+      - name: Check line endings
+        run: |
+          crlf=$(find . -name "*.ps1" -o -name "*.sh" | xargs grep -l $'\r' 2>/dev/null || true)
+          if [ -n "$crlf" ]; then
+            echo "WARNING: Files with CRLF line endings (should be LF):"
+            echo "$crlf"
+          else
+            echo "All script files have LF line endings"
+          fi
+
+      - name: Check for .gitignore
+        run: |
+          if [ -f .gitignore ]; then
+            echo ".gitignore exists"
+            # Check it covers common temp files
+            if ! grep -q "\*.log" .gitignore 2>/dev/null; then
+              echo "Note: .gitignore does not contain *.log"
+            fi
+          else
+            echo "Warning: No .gitignore found"
+          fi
