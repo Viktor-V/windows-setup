@@ -58,12 +58,13 @@ while (-not (Test-Connection -ComputerName 1.1.1.1 -Count 1 -Quiet)) {
 
 Write-Host "[STEP 4] Downloading and processing app manifests via WinGet..." -ForegroundColor Cyan
 $exeApps = @(
-    "DuongDieuPhap.ImageGlass", 
-    "VideoLAN.VLC", 
-    "Valve.Steam", 
-    "Flow-Launcher.Flow-Launcher", 
-    "glzr-io.glazewm", 
-    "Git.Git", 
+    "7zip.7zip",
+    "DuongDieuPhap.ImageGlass",
+    "VideoLAN.VLC",
+    "Valve.Steam",
+    "Flow-Launcher.Flow-Launcher",
+    "glzr-io.glazewm",
+    "Git.Git",
     "wez.wezterm"
 )
 
