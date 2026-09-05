@@ -148,26 +148,22 @@ $adminProfileContent = @"
 # For elevated dev environment tasks
 
 # Check if running as admin, if not, relaunch as admin
-\$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
-\$windowsPrincipal = New-Object Security.Principal.WindowsPrincipal(\$currentIdentity)
-\$isAdmin = \$windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+`$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+`$windowsPrincipal = New-Object Security.Principal.WindowsPrincipal(`$currentIdentity)
+`$isAdmin = `$windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
-if (-not \$isAdmin) {
+if (-not `$isAdmin) {
     Write-Host "Relaunching PowerShell with administrator privileges..." -ForegroundColor Yellow
-    # Relaunch as administrator
-    Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "' + \$MyInvocation.MyCommand.Path + '"'
+    Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "' + `$MyInvocation.MyCommand.Path + '"'
     Exit
 }
 
-# Admin-specific environment setup
 Write-Host "Running with administrator privileges" -ForegroundColor Green
 
-# Add useful aliases for admin tasks
 Set-Alias -Name ll -Value 'ls -lah' -Option AllScope
 Set-Alias -Name gs -Value 'git status' -Option AllScope
 Set-Alias -Name gc -Value 'git commit' -Option AllScope
 
-# WSL2 management helpers
 function Restart-WSL {
     Write-Host "Restarting WSL..." -ForegroundColor Cyan
     wsl --shutdown
@@ -179,8 +175,7 @@ function WSL-IP {
     wsl hostname -I
 }
 
-# Show welcome message
-Write-Host "" 
+Write-Host ""
 Write-Host "=== Dev Environment Admin PowerShell ===" -ForegroundColor Cyan
 Write-Host "Useful commands:" -ForegroundColor Yellow
 Write-Host "  Restart-WSL     - Restart WSL subsystem" -ForegroundColor White
@@ -202,24 +197,22 @@ Write-Host "[OK] PowerShell admin profile configured" -ForegroundColor Green
 
 Write-Host "[STEP 8] Creating PowerShell administrator shortcut..." -ForegroundColor Cyan
 
-# Create a desktop shortcut for PowerShell that runs as administrator
-\$desktopPath = [Environment]::GetFolderPath('Desktop')
-\$shortcutPath = Join-Path \$desktopPath "DevSetup PowerShell Admin.lnk"
+$desktopPath = [Environment]::GetFolderPath('Desktop')
+$shortcutPath = Join-Path $desktopPath "DevSetup PowerShell Admin.lnk"
 
-\$wshell = New-Object -ComObject WScript.Shell
-\$shortcut = \$wshell.CreateShortcut(\$shortcutPath)
-\$shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-\$shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass"
-\$shortcut.WorkingDirectory = "$env:USERPROFILE"
-\$shortcut.Description = "PowerShell with admin privileges for dev environment tasks"
-\$shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,176"
-\$shortcut.Save()
+$wshell = New-Object -ComObject WScript.Shell
+$shortcut = $wshell.CreateShortcut($shortcutPath)
+$shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass"
+$shortcut.WorkingDirectory = "$env:USERPROFILE"
+$shortcut.Description = "PowerShell with admin privileges for dev environment tasks"
+$shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,176"
+$shortcut.Save()
 
 Write-Host "[OK] PowerShell admin shortcut created on desktop" -ForegroundColor Green
 
 Write-Host "[STEP 9] Creating WezTerm WSL2 shortcut with Fish..." -ForegroundColor Cyan
 
-# Function to create WSL shortcuts
 function New-WSLShortcut {
     param(
         [string]$ShortcutName,
@@ -229,32 +222,29 @@ function New-WSLShortcut {
         [string]$IconLocation,
         [bool]$AddToStartup = $false
     )
-    
-    \$wshell = New-Object -ComObject WScript.Shell
-    
-    # Create desktop shortcut
-    \$desktopPath = [Environment]::GetFolderPath('Desktop')
-    \$shortcutPath = Join-Path \$desktopPath "\$ShortcutName.lnk"
-    \$shortcut = \$wshell.CreateShortcut(\$shortcutPath)
-    \$shortcut.TargetPath = \$TargetPath
-    \$shortcut.Arguments = \$arguments
-    \$shortcut.WorkingDirectory = \$workingDirectory
-    \$shortcut.IconLocation = \$iconLocation
-    \$shortcut.Save()
-    
-    Write-Host " -> Created desktop shortcut: \$ShortcutName.lnk" -ForegroundColor Green
-    
-    # Optionally add to Startup folder
-    if (\$AddToStartup) {
-        \$startupPath = [Environment]::GetFolderPath('Startup')
-        \$startupShortcutPath = Join-Path \$startupPath "\$ShortcutName.lnk"
-        \$startupShortcut = \$wshell.CreateShortcut(\$startupShortcutPath)
-        \$startupShortcut.TargetPath = \$targetPath
-        \$startupShortcut.Arguments = \$arguments
-        \$startupShortcut.WorkingDirectory = \$workingDirectory
-        \$startupShortcut.IconLocation = \$iconLocation
-        \$startupShortcut.Save()
-        Write-Host " -> Added to Startup folder: \$ShortcutName.lnk" -ForegroundColor Green
+
+    $wshell = New-Object -ComObject WScript.Shell
+    $desktopPath = [Environment]::GetFolderPath('Desktop')
+    $shortcutPath = Join-Path $desktopPath "$ShortcutName.lnk"
+    $shortcut = $wshell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $TargetPath
+    $shortcut.Arguments = $Arguments
+    $shortcut.WorkingDirectory = $WorkingDirectory
+    $shortcut.IconLocation = $IconLocation
+    $shortcut.Save()
+
+    Write-Host " -> Created desktop shortcut: $ShortcutName.lnk" -ForegroundColor Green
+
+    if ($AddToStartup) {
+        $startupPath = [Environment]::GetFolderPath('Startup')
+        $startupShortcutPath = Join-Path $startupPath "$ShortcutName.lnk"
+        $startupShortcut = $wshell.CreateShortcut($startupShortcutPath)
+        $startupShortcut.TargetPath = $TargetPath
+        $startupShortcut.Arguments = $Arguments
+        $startupShortcut.WorkingDirectory = $WorkingDirectory
+        $startupShortcut.IconLocation = $IconLocation
+        $startupShortcut.Save()
+        Write-Host " -> Added to Startup folder: $ShortcutName.lnk" -ForegroundColor Green
     }
 }
 
