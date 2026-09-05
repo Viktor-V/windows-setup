@@ -205,6 +205,18 @@ exit 1
 Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh")
 
+Write-Host " -> Installing btop..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_btop.sh")
+
+Write-Host " -> Installing lazygit..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_lazygit.sh")
+
+Write-Host " -> Installing fastfetch..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_fastfetch.sh")
+
+Write-Host " -> Installing zoxide..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_zoxide.sh")
+
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 

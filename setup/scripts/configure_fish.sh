@@ -14,6 +14,11 @@ if type -q starship
     starship init fish | source
 end
 
+# Initialize zoxide
+if type -q zoxide
+    zoxide init fish | source
+end
+
 # Set default directory
 cd ~
 
@@ -28,6 +33,11 @@ alias ga='git add'
 alias gc='git commit'
 alias gp='git push'
 alias gl='git log --oneline --graph --decorate --all'
+
+# New tools aliases
+alias tb='btop'
+alias lg='lazygit'
+alias ff='fastfetch'
 
 # Common commands
 alias ..='cd ..'
