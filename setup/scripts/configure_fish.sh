@@ -6,8 +6,8 @@ USER_NAME="${1:-user}"
 mkdir -p /root/.config/fish
 mkdir -p "/home/$USER_NAME/.config/fish"
 
-cat > /root/.config/fish/config.fish <<'EOF'
-# Fish shell configuration for viktorv
+cat > /root/.config/fish/config.fish <<EOF
+# Fish shell configuration for $USER_NAME
 
 # Initialize Starship prompt
 if type -q starship
@@ -35,7 +35,7 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 
 # WSL specific
-alias winhome='cd /mnt/c/Users/viktorv'
+alias winhome='cd /mnt/c/Users/$USER_NAME'
 alias desk='cd ~/Desktop 2>/dev/null || mkdir -p ~/Desktop && cd ~/Desktop'
 
 # Set default editor
@@ -43,15 +43,13 @@ set -gx EDITOR nvim
 set -gx VISUAL nvim
 
 # PATH additions
-fish_add_path $HOME/.local/bin
+fish_add_path \$HOME/.local/bin
 fish_add_path /usr/local/bin
 fish_add_path /usr/local/go/bin
 
 # Enable vi mode
 fish_vi_key_bindings
 EOF
-
-sed -i "s/viktorv/$USER_NAME/g" /root/.config/fish/config.fish
 
 cp /root/.config/fish/config.fish \
    "/home/$USER_NAME/.config/fish/config.fish"
