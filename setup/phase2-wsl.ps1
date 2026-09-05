@@ -217,6 +217,12 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_fastfetch.s
 Write-Host " -> Installing zoxide..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_zoxide.sh")
 
+Write-Host " -> Installing atuin..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_atuin.sh")
+
+Write-Host " -> Installing bat..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_bat.sh")
+
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 

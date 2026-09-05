@@ -19,6 +19,11 @@ if type -q zoxide
     zoxide init fish | source
 end
 
+# Initialize atuin (sync history)
+if type -q atuin
+    atuin init fish | source
+end
+
 # Set default directory
 cd ~
 
@@ -38,6 +43,8 @@ alias gl='git log --oneline --graph --decorate --all'
 alias tb='btop'
 alias lg='lazygit'
 alias ff='fastfetch'
+alias cat='bat'
+alias grep='grep --color=auto'
 
 # Common commands
 alias ..='cd ..'
