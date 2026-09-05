@@ -223,6 +223,9 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_atuin.sh")
 Write-Host " -> Installing bat..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_bat.sh")
 
+Write-Host " -> Installing chezmoi..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_chezmoi.sh")
+
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 
