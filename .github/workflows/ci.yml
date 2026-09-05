@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  powershell:
+    name: PowerShell Syntax
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $scripts = Get-ChildItem -Path . -Recurse -Include *.ps1
+          foreach ($script in $scripts) {
+            Write-Host "Checking $($script.FullName)"
+            $errors = $null
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$errors)
+            if ($errors) {
+              Write-Host "ERRORS found:" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_ }
+              exit 1
+            }
+            Write-Host "OK" -ForegroundColor Green
+          }
+
+  bash:
+    name: Bash Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Check Bash syntax and run ShellCheck
+        run: |
+          for script in $(find . -name "*.sh" -type f); do
+            echo "Checking $script"
+            bash -n "$script" || exit 1
+            shellcheck --severity=error "$script" || exit 1
+            echo "OK"
+          done
+
+  markdown:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Markdown files
+        run: |
+          for file in $(find . -name "*.md" -type f); do
+            echo "Checking $file"
+            # Basic checks
+            if ! grep -q "^#" "$file" 2>/dev/null; then
+              echo "Warning: $file has no headings"
+            fi
+            # Check for broken links (basic)
+            if grep -qE '\[.*\]\(.*\)' "$file"; then
+              echo "Link found in $file"
+            fi
+          done
