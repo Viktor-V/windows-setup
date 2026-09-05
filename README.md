@@ -12,11 +12,11 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Removes bloatware and unnecessary Windows apps
 - Installs essential applications via Winget (ImageGlass, VLC, Steam, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
-- Downloads and installs **WezTerm** terminal with **Inconsolata Nerd Font**
+- Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
 - Creates PowerShell admin profile with auto-elevation
 - Creates desktop shortcuts for quick access:
   - `WezTerm WSL2 (Fish)` - Opens WezTerm with Fish shell and Starship prompt
-- Creates WSL2 filesystem layout and configures Inconsolata Nerd Font system-wide
+- Creates WSL2 filesystem layout and configures JetBrains Mono Nerd Font system-wide
 
 ### Phase 2: WSL2 & Linux Environment
 - Sets up **Debian WSL2** distribution with Fish shell
@@ -48,13 +48,13 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 6. Once complete:
    - Portainer UI at http://localhost:9000
-   - Open Debian terminal to see Fish + Inconsolata Font
+   - Open Debian terminal to see Fish + JetBrains Mono Font
    - Login with your chosen username
 
 ## Projects & Tools Installed
 
 ### Windows Applications
-- ImageGlass, VLC, Steam, Flow-Launcher, GlazeWM, Git, Windows Terminal
+- 7-Zip, ImageGlass, VLC, Steam, Flow-Launcher, GlazeWM, Git, WezTerm
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo
@@ -63,6 +63,8 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Database client: dblab
 - Container management: Docker, Portainer
 - CLI: OpenCode
+- TUI tools: btop, lazygit, fastfetch, zoxide, atuin, bat
+- Dotfiles manager: chezmoi
 
 ## Folder Structure
 - `setup/` - Main setup scripts
