@@ -29,6 +29,21 @@ if (-not $isAdmin) {
     exit 1
 }
 
+Write-Host ""
+Write-Host "This script will automatically configure your Windows 11 development environment:" -ForegroundColor White
+Write-Host "  Phase 1: Windows configuration, app installation (7-Zip, VLC, Git, WezTerm, etc.)," -ForegroundColor White
+Write-Host "           visual tweaks (dark theme, fonts), WSL2 setup" -ForegroundColor White
+Write-Host "  Phase 2: Debian WSL2 with Fish shell, Neovim, Starship, Yazi, dblab, Docker, Portainer, OpenCode" -ForegroundColor White
+Write-Host ""
+Write-Host "Requires: Internet connection, reboot after Phase 1" -ForegroundColor Yellow
+Write-Host ""
+$confirm = Read-Host "Continue? (Y/n)"
+if ($confirm -eq "n" -or $confirm -eq "N") {
+    Write-Host "Aborted." -ForegroundColor Yellow
+    Read-Host "Press Enter to exit..."
+    exit 0
+}
+
 # Create staging directory
 New-Item -Path $stageDir -ItemType Directory -Force | Out-Null
 
