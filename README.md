@@ -4,7 +4,7 @@ Automated setup script for Windows 11 development environment.
 
 ## What it does
 
-This project can be installed on any Windows 11 machine. For best results, use a fresh installation with the [autounattend.xml gist](https://gist.github.com/Viktor-V/a04e4e873e71eceea9017fdf30f8698f) — it pre-configures the system and automatically downloads and runs this setup on first logon.
+This project can be installed on any Windows 11 machine. For best results, use a fresh installation with the bundled [`autounattend.xml`](autounattend.xml) — it pre-configures the system and automatically downloads and runs this setup on first logon.
 
 This project automates the complete configuration of a Windows 11 machine for development purposes, consisting of two main phases:
 
@@ -74,7 +74,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ## Windows Unattended Installation
 
-For fully automated Windows installation, use the [autounattend.xml gist](https://gist.github.com/Viktor-V/a04e4e873e71eceea9017fdf30f8698f). It will:
+For fully automated Windows installation, use the bundled [`autounattend.xml`](autounattend.xml). It will:
 
 1. Install Windows 11 with default settings
 2. Remove bloatware and configure basic settings

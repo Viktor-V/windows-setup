@@ -51,9 +51,47 @@ Set-ItemProperty -Path $hAdv -Name "Start_TrackProgs" -Type DWORD -Value 0 -Forc
 Set-ItemProperty -Path "Registry::HKEY_USERS\.DEFAULT\Control Panel\Colors" -Name "Background" -Value "0 0 0" -Force
 
 Write-Host "[STEP 3] Verifying active network connection status..." -ForegroundColor Cyan
-while (-not (Test-Connection -ComputerName 1.1.1.1 -Count 1 -Quiet)) { 
-    Write-Host " -> Waiting for network connection..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5 
+
+function Test-InternetConnection {
+    # Prefer a TCP probe to a real HTTPS endpoint; Test-Connection uses WMI
+    # (Win32_PingStatus) and throws "Generic failure" when the stack is not ready.
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $result = $client.BeginConnect("one.one.one.one", 443, $null, $null)
+        $connected = $result.AsyncWaitHandle.WaitOne(3000)
+        if ($connected -and $client.Connected) {
+            $client.Close()
+            return $true
+        }
+        $client.Close()
+    }
+    catch {
+        # fall through to ping fallback
+    }
+
+    # Fallback: .NET ping (avoids WMI as well)
+    try {
+        $ping = New-Object System.Net.NetworkInformation.Ping
+        $reply = $ping.Send("1.1.1.1", 1000)
+        return ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success)
+    }
+    catch {
+        return $false
+    }
+}
+
+$netTimeout = 12   # attempts (5 s x 12 = 60 s)
+$connected = $false
+for ($i = 1; $i -le $netTimeout; $i++) {
+    if (Test-InternetConnection) {
+        $connected = $true
+        break
+    }
+    Write-Host " -> Network check #$i/$netTimeout - waiting..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+}
+if (-not $connected) {
+    Write-Warning "Network unavailable after $netTimeout attempts - continuing anyway"
 }
 
 Write-Host "[STEP 4] Downloading and processing app manifests via WinGet..." -ForegroundColor Cyan
