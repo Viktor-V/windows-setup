@@ -912,6 +912,21 @@ Write-Host '  Dev Environment Setup - Auto Launcher' -ForegroundColor Cyan;
 Write-Host '========================================' -ForegroundColor Cyan;
 Write-Host '';
 
+Write-Host 'This script will automatically configure your Windows 11 development environment:' -ForegroundColor White;
+Write-Host '  Phase 1: Windows configuration, app installation (7-Zip, VLC, Git, WezTerm, etc.),' -ForegroundColor White;
+Write-Host '           visual tweaks (dark theme, fonts), WSL2 setup' -ForegroundColor White;
+Write-Host '  Phase 2: Debian WSL2 with Fish shell, Neovim, Starship, Yazi, dblab, Docker, Portainer, OpenCode' -ForegroundColor White;
+Write-Host '';
+Write-Host 'Requires: Internet connection, reboot after Phase 1' -ForegroundColor Yellow;
+Write-Host '';
+
+$confirm = Read-Host 'Start the dev environment setup now? (Y/n)';
+if ($confirm -eq 'n' -or $confirm -eq 'N') {
+    Write-Log 'User declined to run setup. Exiting.';
+    Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction 'SilentlyContinue';
+    exit 0;
+}
+
 function Test-InternetConnection {
     try {
         $client = New-Object System.Net.Sockets.TcpClient;
@@ -977,13 +992,13 @@ $isAdmin = $windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::A
 if (-not $isAdmin) {
     Write-Host 'Relaunching as Administrator...' -ForegroundColor Yellow;
     Write-Log 'Current process is not elevated. Relaunching as Administrator...';
-    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $setupScript + '"';
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $setupScript + '" -Auto';
     Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $arguments -WorkingDirectory (Split-Path -Parent $setupScript);
     exit 0;
 }
 
 Write-Log 'Already running as Administrator. Executing setup.ps1...';
-&amp; $setupScript;
+&amp; $setupScript -Auto;
 		</File>
 	</Extensions>
 </unattend>

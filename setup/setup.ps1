@@ -1,7 +1,8 @@
 # setup.ps1 - Main Dev Environment Setup Orchestrator
 param(
     [switch]$SkipPhase1,
-    [switch]$SkipPhase2
+    [switch]$SkipPhase2,
+    [switch]$Auto
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,11 +38,14 @@ Write-Host "  Phase 2: Debian WSL2 with Fish shell, Neovim, Starship, Yazi, dbla
 Write-Host ""
 Write-Host "Requires: Internet connection, reboot after Phase 1" -ForegroundColor Yellow
 Write-Host ""
-$confirm = Read-Host "Continue? (Y/n)"
-if ($confirm -eq "n" -or $confirm -eq "N") {
-    Write-Host "Aborted." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit..."
-    exit 0
+
+if (-not $Auto) {
+    $confirm = Read-Host "Continue? (Y/n)"
+    if ($confirm -eq "n" -or $confirm -eq "N") {
+        Write-Host "Aborted." -ForegroundColor Yellow
+        Read-Host "Press Enter to exit..."
+        exit 0
+    }
 }
 
 # Create staging directory
