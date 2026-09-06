@@ -10,7 +10,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ### Phase 1: Windows Configuration
 - Removes bloatware and unnecessary Windows apps
-- Installs essential applications via Winget (ImageGlass, VLC, Steam, Git, etc.)
+- Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
 - Creates PowerShell admin profile with auto-elevation
@@ -54,7 +54,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 ## Projects & Tools Installed
 
 ### Windows Applications
-- 7-Zip, ImageGlass, VLC, Steam, Flow-Launcher, GlazeWM, Git, WezTerm
+- 7-Zip, ImageGlass, VLC, Flow-Launcher, GlazeWM, Git, WezTerm
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo

@@ -99,7 +99,6 @@ $exeApps = @(
     "7zip.7zip",
     "DuongDieuPhap.ImageGlass",
     "VideoLAN.VLC",
-    "Valve.Steam",
     "Flow-Launcher.Flow-Launcher",
     "glzr-io.glazewm",
     "Git.Git",
