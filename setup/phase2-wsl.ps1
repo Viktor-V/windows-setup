@@ -42,7 +42,7 @@ function Invoke-WslBash {
         "--user", $User,
         "--cd", "/root",
         "--exec", "bash", "-lc",
-        "echo '$base64' | base64 -d | bash"
+        "export USER_NAME='$linuxUser'; echo '$base64' | base64 -d | bash"
     )
 }
 

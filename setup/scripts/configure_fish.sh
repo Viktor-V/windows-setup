@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-USER_NAME="${1:-user}"
+USER_NAME="${USER_NAME:-${1:-user}}"
 
 mkdir -p /root/.config/fish
 mkdir -p "/home/$USER_NAME/.config/fish"
