@@ -3,19 +3,24 @@ set -e
 
 echo "Installing Yazi file manager..."
 
-# Download and install Yazi from GitHub releases
-YAZI_VERSION=$(curl -s https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
+# Download and install Yazi from GitHub releases (.deb for Debian)
+YAZI_VERSION=$(curl -fsSL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
 
-curl -L "https://github.com/sxyazi/yazi/releases/download/${YAZI_VERSION}/yazi-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/yazi.tar.gz
-tar -xzf /tmp/yazi.tar.gz -C /usr/local/bin
-chmod +x /usr/local/bin/yazi
-rm -f /tmp/yazi.tar.gz
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64) YAZI_ARCH="x86_64" ;;
+    aarch64) YAZI_ARCH="aarch64" ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
 
-# Install yaegi (Yazi's scripting engine)
-curl -L "https://github.com/sxyazi/yazi/releases/download/${YAZI_VERSION}/yaegi-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/yaegi.tar.gz
-tar -xzf /tmp/yaegi.tar.gz -C /usr/local/bin
-chmod +x /usr/local/bin/yaegi
-rm -f /tmp/yaegi.tar.gz
+DEB="yazi-${YAZI_ARCH}-unknown-linux-gnu.deb"
+curl -fL "https://github.com/sxyazi/yazi/releases/download/${YAZI_VERSION}/${DEB}" -o "/tmp/${DEB}"
+
+apt-get install -y "/tmp/${DEB}"
+rm -f "/tmp/${DEB}"
 
 # Install ffmpeg for image preview support
 if ! command -v ffmpeg >/dev/null 2>&1; then
