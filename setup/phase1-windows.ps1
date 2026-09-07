@@ -310,7 +310,7 @@ Write-Host "[OK] WezTerm WSL2 shortcut with Fish created" -ForegroundColor Green
 Write-Host "[STEP 10] Checking WSL2 prerequisites..." -ForegroundColor Cyan
 
 $wslFeatures = @(
-    @{ Name = 'Microsoft-Windows-Subsystem-for-Linux'; Label = 'WSL' },
+    @{ Name = 'Microsoft-Windows-Subsystem-Linux'; Label = 'WSL' },
     @{ Name = 'VirtualMachinePlatform'; Label = 'Virtual Machine Platform' },
     @{ Name = 'HypervisorPlatform'; Label = 'Hypervisor Platform' }
 )
