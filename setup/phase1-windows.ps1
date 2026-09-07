@@ -134,7 +134,18 @@ foreach ($fontFile in $fontFiles) {
 
 Copy-Item -Path $fontFiles.FullName -Destination "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -Force
 
-[Win32.Win32Fonts]::SendMessage(0xffff, 0x001D, 0, 0) | Out-Null
+try {
+    Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
+[DllImport("user32.dll", SetLastError = true)]
+public static extern int SendMessageTimeout(int hWnd, uint Msg, int wParam, int lParam, uint fuFlags, uint uTimeout, out int lpdwResult);
+"@
+    $result = 0
+    [Win32.NativeMethods]::SendMessageTimeout(0xffff, 0x001D, 0, 0, 2, 1000, [ref] $result) | Out-Null
+    Write-Host " -> System font message sent (legacy UI update)" -ForegroundColor Green
+}
+catch {
+    Write-Warning " -> Failed to notify system of font change (can be ignored); font files already copied"
+}
 
 Write-Host " -> Cleaning up temporary files..." -ForegroundColor Yellow
 Remove-Item -Path $fontTempDir -Recurse -Force
