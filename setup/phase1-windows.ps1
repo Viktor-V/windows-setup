@@ -309,15 +309,14 @@ Write-Host "[OK] WezTerm WSL2 shortcut with Fish created" -ForegroundColor Green
 
 Write-Host "[STEP 10] Checking WSL2 prerequisites..." -ForegroundColor Cyan
 
-$virtEnabled = (Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue).VirtualizationEnabled
-if (-not $virtEnabled) {
-    Write-Host "[WARNING] Hardware virtualization (VT-x/AMD-V) is disabled in BIOS." -ForegroundColor Red
-    Write-Host "  WSL2 will not work until you enable it in your BIOS/UEFI settings." -ForegroundColor Yellow
-} else {
-    Write-Host " -> Hardware virtualization is enabled." -ForegroundColor Green
-}
-
 Write-Host " -> Installing WSL2..." -ForegroundColor Yellow
 wsl --install --no-distribution | Out-Null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host " -> WSL2 is ready." -ForegroundColor Green
+} else {
+    Write-Host "[WARNING] WSL2 install returned exit code $LASTEXITCODE." -ForegroundColor Red
+    Write-Host "  If you see a virtualization error, enable VT-x/AMD-V in your BIOS/UEFI settings." -ForegroundColor Yellow
+}
 
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green

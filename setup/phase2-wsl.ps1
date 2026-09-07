@@ -30,6 +30,9 @@ function Invoke-WslBash {
         [string]$User = "root"
     )
 
+    # Normalize CRLF -> LF so bash line-continuations (backslash) work.
+    $Command = $Command -replace "`r`n", "`n"
+
     # Encode the Bash command to avoid PowerShell quoting and Windows-path translation issues.
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($Command)
     $base64 = [Convert]::ToBase64String($bytes)
@@ -117,7 +120,7 @@ default=$linuxUser
 "@
 
 $wslConfigBase64 = [Convert]::ToBase64String(
-    [System.Text.Encoding]::UTF8.GetBytes($wslConfig)
+    [System.Text.Encoding]::UTF8.GetBytes(($wslConfig -replace "`r`n", "`n"))
 )
 
 Invoke-WslBash -Command @"
