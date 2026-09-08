@@ -152,12 +152,7 @@ Remove-Item -Path $fontTempDir -Recurse -Force
 
 Write-Host "[STEP 6] Configuring WezTerm..." -ForegroundColor Cyan
 
-$wezConfigDir = "$env:APPDATA\wezterm"
-$wezConfigFile = "$wezConfigDir\wezterm.lua"
-
-if (-not (Test-Path $wezConfigDir)) {
-    New-Item -ItemType Directory -Path $wezConfigDir -Force | Out-Null
-}
+$wezConfigFile = "$HOME\.wezterm.lua"
 
 $wezConfig = @"
 -- WezTerm configuration
