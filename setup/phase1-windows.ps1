@@ -262,8 +262,8 @@ Write-Host "[OK] PowerShell admin profile configured" -ForegroundColor Green
 
 Write-Host "[STEP 8] Creating PowerShell administrator shortcut..." -ForegroundColor Cyan
 
-$desktopPath = [Environment]::GetFolderPath('Desktop')
-$shortcutPath = Join-Path $desktopPath "DevSetup PowerShell Admin.lnk"
+$startMenuDir = [Environment]::GetFolderPath('CommonPrograms')
+$shortcutPath = Join-Path $startMenuDir "PowerShell Admin.lnk"
 
 $wshell = New-Object -ComObject WScript.Shell
 $shortcut = $wshell.CreateShortcut($shortcutPath)
@@ -279,69 +279,9 @@ $lnkBytes = [System.IO.File]::ReadAllBytes($shortcutPath)
 $lnkBytes[0x15] = $lnkBytes[0x15] -bor 0x20
 [System.IO.File]::WriteAllBytes($shortcutPath, $lnkBytes)
 
-Write-Host "[OK] PowerShell admin shortcut created on desktop" -ForegroundColor Green
+Write-Host "[OK] PowerShell admin shortcut created in Start Menu" -ForegroundColor Green
 
-Write-Host "[STEP 9] Creating WezTerm WSL2 shortcut with Fish..." -ForegroundColor Cyan
-
-function New-WSLShortcut {
-    param(
-        [string]$ShortcutName,
-        [string]$TargetPath,
-        [string]$Arguments,
-        [string]$WorkingDirectory,
-        [string]$IconLocation,
-        [bool]$AddToStartup = $false
-    )
-
-    $wshell = New-Object -ComObject WScript.Shell
-    $desktopPath = [Environment]::GetFolderPath('Desktop')
-    $shortcutPath = Join-Path $desktopPath "$ShortcutName.lnk"
-    $shortcut = $wshell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $TargetPath
-    $shortcut.Arguments = $Arguments
-    $shortcut.WorkingDirectory = $WorkingDirectory
-    $shortcut.IconLocation = $IconLocation
-    $shortcut.Save()
-
-    Write-Host " -> Created desktop shortcut: $ShortcutName.lnk" -ForegroundColor Green
-
-    if ($AddToStartup) {
-        $startupPath = [Environment]::GetFolderPath('Startup')
-        $startupShortcutPath = Join-Path $startupPath "$ShortcutName.lnk"
-        $startupShortcut = $wshell.CreateShortcut($startupShortcutPath)
-        $startupShortcut.TargetPath = $TargetPath
-        $startupShortcut.Arguments = $Arguments
-        $startupShortcut.WorkingDirectory = $WorkingDirectory
-        $startupShortcut.IconLocation = $IconLocation
-        $startupShortcut.Save()
-        Write-Host " -> Added to Startup folder: $ShortcutName.lnk" -ForegroundColor Green
-    }
-}
-
-# Create WezTerm with WSL2 shortcut that launches Fish directly
-$wezTermExe = @(
-    "$env:LOCALAPPDATA\Programs\wezterm\wezterm-gui.exe",
-    "$env:ProgramFiles\WezTerm\wezterm-gui.exe",
-    "$env:LOCALAPPDATA\Programs\wezterm\wezterm.exe",
-    "$env:ProgramFiles\WezTerm\wezterm.exe"
-) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-
-if (-not $wezTermExe) {
-    Write-Warning "WezTerm executable not found. Skipping shortcut creation."
-}
-else {
-    New-WSLShortcut `
-        -ShortcutName "WezTerm WSL2 (Fish)" `
-        -TargetPath $wezTermExe `
-        -Arguments "" `
-        -WorkingDirectory "$env:USERPROFILE" `
-        -IconLocation "$env:SystemRoot\System32\shell32.dll,240" `
-        -AddToStartup $false
-}
-
-Write-Host "[OK] WezTerm WSL2 shortcut with Fish created" -ForegroundColor Green
-
-Write-Host "[STEP 10] Checking WSL2 prerequisites..." -ForegroundColor Cyan
+Write-Host "[STEP 9] Checking WSL2 prerequisites..." -ForegroundColor Cyan
 
 Write-Host " -> Installing WSL2..." -ForegroundColor Yellow
 wsl --install --no-distribution | Out-Null
