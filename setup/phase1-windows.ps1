@@ -320,6 +320,8 @@ function New-WSLShortcut {
 
 # Create WezTerm with WSL2 shortcut that launches Fish directly
 $wezTermExe = @(
+    "$env:LOCALAPPDATA\Programs\wezterm\wezterm-gui.exe",
+    "$env:ProgramFiles\WezTerm\wezterm-gui.exe",
     "$env:LOCALAPPDATA\Programs\wezterm\wezterm.exe",
     "$env:ProgramFiles\WezTerm\wezterm.exe"
 ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
@@ -331,7 +333,7 @@ else {
     New-WSLShortcut `
         -ShortcutName "WezTerm WSL2 (Fish)" `
         -TargetPath $wezTermExe `
-        -Arguments "start" `
+        -Arguments "" `
         -WorkingDirectory "$env:USERPROFILE" `
         -IconLocation "$env:SystemRoot\System32\shell32.dll,240" `
         -AddToStartup $false
