@@ -116,7 +116,7 @@ if (-not $SkipPhase1) {
 
         $action = New-ScheduledTaskAction `
             -Execute "powershell.exe" `
-            -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -SkipPhase1" `
+            -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -SkipPhase1 -Auto" `
             -WorkingDirectory $PSScriptRoot
 
         $trigger = New-ScheduledTaskTrigger `
