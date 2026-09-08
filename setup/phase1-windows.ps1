@@ -128,11 +128,30 @@ Expand-Archive -Path $fontZip -DestinationPath $fontTempDir -Force
 
 Write-Host " -> Installing font files..." -ForegroundColor Yellow
 $fontFiles = Get-ChildItem -Path $fontTempDir -Filter "*.ttf" -Recurse
-foreach ($fontFile in $fontFiles) {
-    Copy-Item -Path $fontFile.FullName -Destination "$env:SystemRoot\Fonts" -Force
+
+# Install per-user: copy to LOCALAPPDATA fonts dir and register in HKCU.
+$userFontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+if (-not (Test-Path $userFontDir)) {
+    New-Item -ItemType Directory -Path $userFontDir -Force | Out-Null
 }
 
-Copy-Item -Path $fontFiles.FullName -Destination "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -Force
+$fontRegPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+
+Add-Type -AssemblyName System.Drawing
+
+foreach ($fontFile in $fontFiles) {
+    Copy-Item -Path $fontFile.FullName -Destination $userFontDir -Force
+
+    # Read the real family name from the TTF so the registry entry matches.
+    $pfc = New-Object System.Drawing.Text.PrivateFontCollection
+    $pfc.AddFontFile($fontFile.FullName)
+    $familyName = $pfc.Families[0].Name
+    $pfc.Dispose()
+
+    if ($familyName) {
+        New-ItemProperty -Path $fontRegPath -Name "$familyName (TrueType)" -Value $fontFile.Name -PropertyType String -Force | Out-Null
+    }
+}
 
 try {
     Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
@@ -161,7 +180,7 @@ local wezterm = require 'wezterm'
 
 return {
   default_domain = "WSL:Debian",
-  font = wezterm.font("JetBrains Mono NF"),
+  font = wezterm.font("JetBrainsMono NF"),
   font_size = 11.0,
   color_scheme = "Dracula (Official)",
   window_background_opacity = 0.9,
