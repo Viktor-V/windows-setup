@@ -229,6 +229,9 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.s
 Write-Host " -> Finalizing Fish shell configuration..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\configure_fish.sh")
 
+Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
+
 Write-Host "[STEP 9] Restarting Debian to apply wsl.conf..." -ForegroundColor Cyan
 
 & wsl.exe --terminate $distroName

@@ -3,7 +3,7 @@ set -e
 
 echo "Installing chezmoi..."
 
-# Install chezmoi using the official installer
-curl -sfL https://get.chezmoi.io | sh
+# Install chezmoi to a system-wide location using the official installer
+sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b /usr/local/bin
 
 echo "chezmoi installed: $(chezmoi --version 2>/dev/null || echo 'checking...')"

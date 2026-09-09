@@ -28,8 +28,10 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
     apt-get install -y ffmpeg
 fi
 
-# Create Yazi config directory
-mkdir -p ~/.config/yazi
+# Create Yazi config directory for the real user
+USER_NAME="${USER_NAME:-${1:-user}}"
+mkdir -p "/home/$USER_NAME/.config/yazi"
+chown -R "$USER_NAME:$USER_NAME" "/home/$USER_NAME/.config/yazi"
 
 # Install file preview support libraries
 echo "Installing file preview dependencies..."
