@@ -19,9 +19,9 @@ if type -q zoxide
     zoxide init fish | source
 end
 
-# Initialize atuin (sync history)
+# Initialize atuin (sync history), keep up-arrow as normal history recall
 if type -q atuin
-    atuin init fish | source
+    atuin init fish --disable-up-arrow | source
 end
 
 # Set default directory
@@ -45,6 +45,7 @@ alias lg='lazygit'
 alias ff='fastfetch'
 alias cat='bat'
 alias grep='grep --color=auto'
+alias history='atuin search -i'
 
 # Common commands
 alias ..='cd ..'
