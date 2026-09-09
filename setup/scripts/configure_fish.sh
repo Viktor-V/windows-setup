@@ -43,7 +43,11 @@ alias gl='git log --oneline --graph --decorate --all'
 alias tb='btop'
 alias lg='lazygit'
 alias ff='fastfetch'
-alias cat='bat'
+if type -q bat
+    alias cat='bat'
+else if type -q batcat
+    alias cat='batcat'
+end
 alias grep='grep --color=auto'
 alias history='atuin search -i'
 
