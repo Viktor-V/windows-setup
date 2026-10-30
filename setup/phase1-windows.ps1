@@ -101,24 +101,14 @@ $exeApps = @(
     "VideoLAN.VLC",
     "Flow-Launcher.Flow-Launcher",
     "glzr-io.glazewm",
+    "glzr-io.zebar",
     "Git.Git",
-    "wez.wezterm",
-    "AmN.yasb"
+    "wez.wezterm"
 )
 
 foreach ($app in $exeApps) { 
     Write-Host " -> Installing $app..." -ForegroundColor Yellow
     winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
-}
-
-Write-Host " -> Removing Zebar (replaced by YASB)..." -ForegroundColor Yellow
-$zebarList = & winget list --id glzr-io.zebar -e --accept-source-agreements 2>$null | Out-String
-if ($zebarList -match "glzr-io\.zebar") {
-    & winget uninstall --id glzr-io.zebar -e --silent --accept-source-agreements 2>$null | Out-Null
-    Write-Host "   Zebar removed." -ForegroundColor Cyan
-}
-else {
-    Write-Host "   Zebar not installed, skipping." -ForegroundColor Green
 }
 
 Write-Host " -> Installing thide taskbar hider..." -ForegroundColor Yellow
@@ -148,14 +138,14 @@ catch {
     Write-Warning "   thide installation failed: $($_.Exception.Message)"
 }
 
-Write-Host " -> Enabling YASB autostart..." -ForegroundColor Yellow
-$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-if (Get-Command yasbc -ErrorAction SilentlyContinue) {
-    & yasbc enable-autostart | Out-Null
-    Write-Host "   YASB autostart enabled." -ForegroundColor Cyan
+Write-Host " -> Enabling Zebar autostart..." -ForegroundColor Yellow
+$zebarExe = "$env:ProgramFiles\glzr.io\Zebar\zebar.exe"
+if (Test-Path -LiteralPath $zebarExe) {
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "Zebar" -Value ('"' + $zebarExe + '"')
+    Write-Host "   Zebar autostart enabled." -ForegroundColor Cyan
 }
 else {
-    Write-Warning "   yasbc not found; YASB autostart not configured."
+    Write-Warning "   Zebar executable not found at $zebarExe; autostart not configured."
 }
 
 Write-Host "[STEP 5] Deploying JetBrains Mono Nerd Font for WezTerm..." -ForegroundColor Cyan
