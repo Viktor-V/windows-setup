@@ -102,12 +102,60 @@ $exeApps = @(
     "Flow-Launcher.Flow-Launcher",
     "glzr-io.glazewm",
     "Git.Git",
-    "wez.wezterm"
+    "wez.wezterm",
+    "AmN.yasb"
 )
 
 foreach ($app in $exeApps) { 
     Write-Host " -> Installing $app..." -ForegroundColor Yellow
     winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
+}
+
+Write-Host " -> Removing Zebar (replaced by YASB)..." -ForegroundColor Yellow
+$zebarList = & winget list --id glzr-io.zebar -e --accept-source-agreements 2>$null | Out-String
+if ($zebarList -match "glzr-io\.zebar") {
+    & winget uninstall --id glzr-io.zebar -e --silent --accept-source-agreements 2>$null | Out-Null
+    Write-Host "   Zebar removed." -ForegroundColor Cyan
+}
+else {
+    Write-Host "   Zebar not installed, skipping." -ForegroundColor Green
+}
+
+Write-Host " -> Installing thide taskbar hider..." -ForegroundColor Yellow
+try {
+    $thideRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/amnweb/thide/releases/latest" -Headers @{ "User-Agent" = "windows-setup" }
+    $thideTag = $thideRelease.tag_name
+    $thideVer = $thideTag.TrimStart("v")
+    $thideArch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
+    $thideMsiName = "thide-$thideVer-$thideArch.msi"
+    $thideMsiUrl = "https://github.com/amnweb/thide/releases/download/$thideTag/$thideMsiName"
+    $thideMsiPath = Join-Path $env:TEMP $thideMsiName
+
+    Invoke-WebRequest -Uri $thideMsiUrl -OutFile $thideMsiPath -UseBasicParsing
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$thideMsiPath`" /qn /norestart" -Wait
+    Remove-Item -LiteralPath $thideMsiPath -Force -ErrorAction SilentlyContinue
+
+    $thideExe = "$env:ProgramFiles\thide\bin\thide.exe"
+    if (Test-Path -LiteralPath $thideExe) {
+        & $thideExe enable-autostart | Out-Null
+        Write-Host "   thide installed and autostart enabled." -ForegroundColor Cyan
+    }
+    else {
+        Write-Warning "   thide installed but executable not found at $thideExe; autostart not configured."
+    }
+}
+catch {
+    Write-Warning "   thide installation failed: $($_.Exception.Message)"
+}
+
+Write-Host " -> Enabling YASB autostart..." -ForegroundColor Yellow
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+if (Get-Command yasbc -ErrorAction SilentlyContinue) {
+    & yasbc enable-autostart | Out-Null
+    Write-Host "   YASB autostart enabled." -ForegroundColor Cyan
+}
+else {
+    Write-Warning "   yasbc not found; YASB autostart not configured."
 }
 
 Write-Host "[STEP 5] Deploying JetBrains Mono Nerd Font for WezTerm..." -ForegroundColor Cyan

@@ -13,9 +13,9 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
+- Installs **YASB** status bar and **thide** taskbar hider (hides the native taskbar), with autostart enabled for both
 - Creates PowerShell admin profile with auto-elevation
-- Creates desktop shortcuts for quick access:
-  - `WezTerm WSL2 (Fish)` - Opens WezTerm with Fish shell and Starship prompt
+- Creates a `PowerShell Admin` shortcut in the Start menu (runs elevated)
 - Creates WSL2 filesystem layout and configures JetBrains Mono Nerd Font system-wide
 
 ### Phase 2: WSL2 & Linux Environment
@@ -54,7 +54,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 ## Projects & Tools Installed
 
 ### Windows Applications
-- 7-Zip, ImageGlass, VLC, Flow-Launcher, GlazeWM, Git, WezTerm
+- 7-Zip, ImageGlass, VLC, Flow-Launcher, GlazeWM, Git, WezTerm, YASB, thide
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo
