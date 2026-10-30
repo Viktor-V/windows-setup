@@ -138,6 +138,16 @@ catch {
     Write-Warning "   thide installation failed: $($_.Exception.Message)"
 }
 
+Write-Host " -> Enabling GlazeWM autostart..." -ForegroundColor Yellow
+$glazeWmExe = "$env:ProgramFiles\glzr.io\GlazeWM\glazewm.exe"
+if (Test-Path -LiteralPath $glazeWmExe) {
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "GlazeWM" -Value ('"' + $glazeWmExe + '"')
+    Write-Host "   GlazeWM autostart enabled." -ForegroundColor Cyan
+}
+else {
+    Write-Warning "   GlazeWM executable not found at $glazeWmExe; autostart not configured."
+}
+
 Write-Host " -> Enabling Zebar autostart..." -ForegroundColor Yellow
 $zebarExe = "$env:ProgramFiles\glzr.io\Zebar\zebar.exe"
 if (Test-Path -LiteralPath $zebarExe) {
