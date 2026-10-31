@@ -21,7 +21,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 ### Phase 2: WSL2 & Linux Environment
 - Sets up **Debian WSL2** distribution with Fish shell
 - Installs base packages: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, etc.
-- Installs development tools: **Yazi** file manager, **Starship** prompt, **dblab** TUI database client
+- Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
@@ -58,7 +58,6 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo
-- File manager: Yazi
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer

@@ -97,7 +97,7 @@ if (-not $connected) {
 Write-Host "[STEP 4] Downloading and processing app manifests via WinGet..." -ForegroundColor Cyan
 $exeApps = @(
     "7zip.7zip",
-    "DuongDieuPhap.ImageGlass",
+    "DuongDieuPhap.ImageGlass.MSI",
     "VideoLAN.VLC",
     "Flow-Launcher.Flow-Launcher",
     "glzr-io.glazewm",
@@ -109,6 +109,65 @@ $exeApps = @(
 foreach ($app in $exeApps) { 
     Write-Host " -> Installing $app..." -ForegroundColor Yellow
     winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
+}
+
+Write-Host " -> Registering ImageGlass as image viewer..." -ForegroundColor Yellow
+$imageGlassExe = @(
+    "$env:LOCALAPPDATA\Programs\ImageGlass\ImageGlass.exe",
+    "$env:ProgramFiles\ImageGlass\ImageGlass.exe",
+    "$env:ProgramFiles\ImageGlass 10\ImageGlass.exe"
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+
+if ($imageGlassExe) {
+    $imageProgId = "ImageGlass.Viewer"
+    $imageProgBase = "HKCU:\Software\Classes\$imageProgId"
+    New-Item -Path "$imageProgBase\shell\open\command" -Force | Out-Null
+    Set-ItemProperty -Path $imageProgBase -Name "(default)" -Value "ImageGlass image"
+    Set-ItemProperty -Path "$imageProgBase\shell\open\command" -Name "(default)" -Value ('"' + $imageGlassExe + '" "%1"')
+
+    $imageExts = ".jpg", ".jpeg", ".jpe", ".jfif", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".ico", ".svg", ".avif", ".heic", ".jxl"
+    foreach ($ext in $imageExts) {
+        New-Item -Path "HKCU:\Software\Classes\$ext" -Force | Out-Null
+        Set-ItemProperty -Path "HKCU:\Software\Classes\$ext" -Name "(default)" -Value $imageProgId
+        $openWith = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ext\OpenWithProgids")
+        $openWith.SetValue($imageProgId, [byte[]]@(), [Microsoft.Win32.RegistryValueKind]::None)
+        $openWith.Close()
+    }
+    Write-Host "   ImageGlass registered; setting it as the default image handler..." -ForegroundColor Cyan
+
+    try {
+        $userSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $ucScriptPath = Join-Path $env:TEMP "set-image-assoc.ps1"
+        $ucLines = @("`$ErrorActionPreference = 'SilentlyContinue'")
+        foreach ($ext in $imageExts) {
+            $ucLines += "Remove-Item -LiteralPath 'Registry::HKEY_USERS\$userSid\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\UserChoice' -Recurse -Force"
+        }
+        Set-Content -Path $ucScriptPath -Value ($ucLines -join "`r`n") -Encoding ascii
+
+        $ucAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ucScriptPath`""
+        $ucPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+        Register-ScheduledTask -TaskName "SetImageAssoc" -Action $ucAction -Principal $ucPrincipal -Force | Out-Null
+        Start-ScheduledTask -TaskName "SetImageAssoc"
+        Start-Sleep -Seconds 5
+        Unregister-ScheduledTask -TaskName "SetImageAssoc" -Confirm:$false
+        Remove-Item -LiteralPath $ucScriptPath -Force -ErrorAction SilentlyContinue
+
+        Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class SetImageAssocShNotify {
+  [DllImport("shell32.dll")] public static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+}
+"@
+        [SetImageAssocShNotify]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
+        Write-Host "   ImageGlass is now the default image handler." -ForegroundColor Cyan
+    }
+    catch {
+        Write-Warning "   Could not set ImageGlass as default: $($_.Exception.Message)"
+    }
+}
+else {
+    Write-Warning "   ImageGlass executable not found; image association not configured."
 }
 
 Write-Host " -> Installing thide taskbar hider..." -ForegroundColor Yellow

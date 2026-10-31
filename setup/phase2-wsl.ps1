@@ -170,9 +170,6 @@ chmod 440 /etc/sudoers.d/${linuxUser}
 usermod -s /usr/bin/fish '${linuxUser}'
 "@
 
-Write-Host " -> Installing Yazi file manager..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_yazi.sh")
-
 Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
 
