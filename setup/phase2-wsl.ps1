@@ -199,6 +199,32 @@ fi
 Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh")
 
+Write-Host " -> OpenCode server password (optional)..." -ForegroundColor Cyan
+$opencodeChoice = Read-Host "Set OPENCODE_SERVER_PASSWORD for 'opencode web/serve'? (Y/n)"
+if ($opencodeChoice -ne "n" -and $opencodeChoice -ne "N") {
+    $secureOpencode = Read-Host -AsSecureString "Enter OPENCODE_SERVER_PASSWORD"
+    $plainOpencode = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureOpencode)
+    )
+    if (-not [string]::IsNullOrWhiteSpace($plainOpencode)) {
+        $escapedOpencode = $plainOpencode.Replace("\", "\\").Replace("'", "\'")
+        $fishLine = "set -gx OPENCODE_SERVER_PASSWORD '" + $escapedOpencode + "'" + "`n"
+        $opencodeLineB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($fishLine))
+        Invoke-WslBash -User $linuxUser -Command @"
+mkdir -p ~/.config/fish/conf.d
+printf '%s' '$opencodeLineB64' | base64 -d > ~/.config/fish/conf.d/opencode.fish
+chmod 600 ~/.config/fish/conf.d/opencode.fish
+"@
+        Write-Host "   OPENCODE_SERVER_PASSWORD saved to fish env." -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "   Empty password, skipped." -ForegroundColor Green
+    }
+}
+else {
+    Write-Host "   Skipped OPENCODE_SERVER_PASSWORD." -ForegroundColor Green
+}
+
 Write-Host " -> Installing btop..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_btop.sh")
 

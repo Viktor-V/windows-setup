@@ -24,6 +24,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
+- Optionally sets `OPENCODE_SERVER_PASSWORD` in the WSL fish environment for `opencode web/serve`
 - Terminates and restarts WSL2 to apply configuration
 
 ## Prerequisites
