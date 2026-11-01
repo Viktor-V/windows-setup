@@ -207,6 +207,7 @@ if ($opencodeChoice -ne "n" -and $opencodeChoice -ne "N") {
         [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureOpencode)
     )
     if (-not [string]::IsNullOrWhiteSpace($plainOpencode)) {
+        [Environment]::SetEnvironmentVariable('OPENCODE_SERVER_PASSWORD', $plainOpencode, 'User')
         $escapedOpencode = $plainOpencode.Replace("\", "\\").Replace("'", "\'")
         $fishLine = "set -gx OPENCODE_SERVER_PASSWORD '" + $escapedOpencode + "'" + "`n"
         $opencodeLineB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($fishLine))
@@ -215,7 +216,7 @@ mkdir -p ~/.config/fish/conf.d
 printf '%s' '$opencodeLineB64' | base64 -d > ~/.config/fish/conf.d/opencode.fish
 chmod 600 ~/.config/fish/conf.d/opencode.fish
 "@
-        Write-Host "   OPENCODE_SERVER_PASSWORD saved to fish env." -ForegroundColor Cyan
+        Write-Host "   OPENCODE_SERVER_PASSWORD saved to Windows User env and WSL fish env." -ForegroundColor Cyan
     }
     else {
         Write-Host "   Empty password, skipped." -ForegroundColor Green
