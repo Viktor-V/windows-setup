@@ -103,7 +103,8 @@ $exeApps = @(
     "glzr-io.glazewm",
     "glzr-io.zebar",
     "Git.Git",
-    "wez.wezterm"
+    "wez.wezterm",
+    "equalsraf.win32yank"
 )
 
 foreach ($app in $exeApps) { 

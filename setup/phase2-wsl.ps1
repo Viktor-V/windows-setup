@@ -171,6 +171,17 @@ chmod 440 /etc/sudoers.d/${linuxUser}
 usermod -s /usr/bin/fish '${linuxUser}'
 "@
 
+Write-Host " -> Linking win32yank into WSL..." -ForegroundColor Cyan
+$win32yankExe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "win32yank.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+if ($win32yankExe) {
+    $wslWin32yank = "/mnt/" + $win32yankExe.Substring(0, 1).ToLower() + (($win32yankExe.Substring(2)) -replace '\\', '/')
+    Invoke-WslBash -Command "ln -sf '$wslWin32yank' /usr/local/bin/win32yank && chmod 755 /usr/local/bin/win32yank"
+    Write-Host "   win32yank available as 'win32yank' in WSL." -ForegroundColor Cyan
+}
+else {
+    Write-Warning "   win32yank.exe not found; WSL link not created."
+}
+
 Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
 
