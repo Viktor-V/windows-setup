@@ -43,6 +43,7 @@ alias gl='git log --oneline --graph --decorate --all'
 alias tb='btop'
 alias lg='lazygit'
 alias ff='fastfetch'
+alias dst='dsh --profile dsh-tui'
 if type -q bat
     alias cat='bat'
 else if type -q batcat

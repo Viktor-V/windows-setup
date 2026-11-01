@@ -176,6 +176,9 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_node.sh")
 Write-Host " -> Installing DeepSeek Harness..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dsh.sh")
 
+Write-Host " -> Installing DeepSeek Harness TUI..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dsh_tui.sh")
+
 Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
 

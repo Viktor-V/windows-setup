@@ -63,7 +63,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Container management: Docker, Portainer
 - CLI: OpenCode
 - Runtime: Node.js 24
-- AI agent: DeepSeek Harness (web UI, `dsh web`)
+- AI agent: DeepSeek Harness — web (`dsh web`) and TUI (`dst` / `dsh --profile dsh-tui`)
 - TUI tools: btop, lazygit, fastfetch, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 
