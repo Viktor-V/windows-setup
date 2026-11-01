@@ -170,6 +170,12 @@ chmod 440 /etc/sudoers.d/${linuxUser}
 usermod -s /usr/bin/fish '${linuxUser}'
 "@
 
+Write-Host " -> Installing Node.js..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_node.sh")
+
+Write-Host " -> Installing DeepSeek Harness..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dsh.sh")
+
 Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
 
