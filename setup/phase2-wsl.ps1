@@ -152,6 +152,7 @@ apt-get install -y \
     fzf \
     python3-pip \
     fish \
+    wl-clipboard \
     passwd \
     sudo
 '@

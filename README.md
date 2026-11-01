@@ -58,7 +58,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - 7-Zip, ImageGlass, VLC, Flow-Launcher, GlazeWM, Zebar, Git, WezTerm, thide
 
 ### Linux/WSL2 Tools
-- Base: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, sudo
+- Base: git, neovim, ripgrep, fzf, python3-pip, fish, wl-clipboard, Docker, sudo
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer
