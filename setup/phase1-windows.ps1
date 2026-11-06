@@ -100,11 +100,8 @@ $exeApps = @(
     "DuongDieuPhap.ImageGlass.MSI",
     "VideoLAN.VLC",
     "Flow-Launcher.Flow-Launcher",
-    "glzr-io.glazewm",
-    "glzr-io.zebar",
     "Git.Git",
-    "wez.wezterm",
-    "equalsraf.win32yank"
+    "wez.wezterm"
 )
 
 foreach ($app in $exeApps) { 
@@ -169,53 +166,6 @@ public class SetImageAssocShNotify {
 }
 else {
     Write-Warning "   ImageGlass executable not found; image association not configured."
-}
-
-Write-Host " -> Installing thide taskbar hider..." -ForegroundColor Yellow
-try {
-    $thideRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/amnweb/thide/releases/latest" -Headers @{ "User-Agent" = "windows-setup" }
-    $thideTag = $thideRelease.tag_name
-    $thideVer = $thideTag.TrimStart("v")
-    $thideArch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
-    $thideMsiName = "thide-$thideVer-$thideArch.msi"
-    $thideMsiUrl = "https://github.com/amnweb/thide/releases/download/$thideTag/$thideMsiName"
-    $thideMsiPath = Join-Path $env:TEMP $thideMsiName
-
-    Invoke-WebRequest -Uri $thideMsiUrl -OutFile $thideMsiPath -UseBasicParsing
-    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$thideMsiPath`" /qn /norestart" -Wait
-    Remove-Item -LiteralPath $thideMsiPath -Force -ErrorAction SilentlyContinue
-
-    $thideExe = "$env:ProgramFiles\thide\bin\thide.exe"
-    if (Test-Path -LiteralPath $thideExe) {
-        & $thideExe enable-autostart | Out-Null
-        Write-Host "   thide installed and autostart enabled." -ForegroundColor Cyan
-    }
-    else {
-        Write-Warning "   thide installed but executable not found at $thideExe; autostart not configured."
-    }
-}
-catch {
-    Write-Warning "   thide installation failed: $($_.Exception.Message)"
-}
-
-Write-Host " -> Enabling GlazeWM autostart..." -ForegroundColor Yellow
-$glazeWmExe = "$env:ProgramFiles\glzr.io\GlazeWM\glazewm.exe"
-if (Test-Path -LiteralPath $glazeWmExe) {
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "GlazeWM" -Value ('"' + $glazeWmExe + '"')
-    Write-Host "   GlazeWM autostart enabled." -ForegroundColor Cyan
-}
-else {
-    Write-Warning "   GlazeWM executable not found at $glazeWmExe; autostart not configured."
-}
-
-Write-Host " -> Enabling Zebar autostart..." -ForegroundColor Yellow
-$zebarExe = "$env:ProgramFiles\glzr.io\Zebar\zebar.exe"
-if (Test-Path -LiteralPath $zebarExe) {
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "Zebar" -Value ('"' + $zebarExe + '"')
-    Write-Host "   Zebar autostart enabled." -ForegroundColor Cyan
-}
-else {
-    Write-Warning "   Zebar executable not found at $zebarExe; autostart not configured."
 }
 
 Write-Host "[STEP 5] Deploying JetBrains Mono Nerd Font for WezTerm..." -ForegroundColor Cyan
