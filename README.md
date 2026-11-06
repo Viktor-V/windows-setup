@@ -12,7 +12,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Removes bloatware and unnecessary Windows apps
 - Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
-- Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
+- Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font** and adds it to autostart
 - Installs **chezmoi** and applies Windows-side dotfiles (WezTerm, Flow Launcher, virtual-desktop helper)
 - Creates PowerShell admin profile with auto-elevation
 - Creates a `PowerShell Admin` shortcut in the Start menu (runs elevated)

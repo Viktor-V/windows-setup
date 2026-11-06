@@ -110,6 +110,23 @@ foreach ($app in $exeApps) {
     winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
 }
 
+Write-Host " -> Enabling WezTerm autostart..." -ForegroundColor Yellow
+$weztermExe = "$env:ProgramFiles\WezTerm\wezterm-gui.exe"
+if (Test-Path -LiteralPath $weztermExe) {
+    $startupDir = [Environment]::GetFolderPath('Startup')
+    $weztermShortcut = Join-Path $startupDir 'WezTerm.lnk'
+    $wshell = New-Object -ComObject WScript.Shell
+    $shortcut = $wshell.CreateShortcut($weztermShortcut)
+    $shortcut.TargetPath = $weztermExe
+    $shortcut.WorkingDirectory = $env:USERPROFILE
+    $shortcut.Description = 'Launch WezTerm on the console virtual desktop'
+    $shortcut.Save()
+    Write-Host "   WezTerm autostart enabled." -ForegroundColor Cyan
+}
+else {
+    Write-Warning "   WezTerm executable not found at $weztermExe; autostart not configured."
+}
+
 Write-Host " -> Registering ImageGlass as image viewer..." -ForegroundColor Yellow
 $imageGlassExe = @(
     "$env:LOCALAPPDATA\Programs\ImageGlass\ImageGlass.exe",
