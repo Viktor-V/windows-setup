@@ -13,7 +13,6 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
-- Installs **thide** taskbar hider (hides the native taskbar) and configures the **Zebar** bar, with autostart enabled for both
 - Creates PowerShell admin profile with auto-elevation
 - Creates a `PowerShell Admin` shortcut in the Start menu (runs elevated)
 - Creates WSL2 filesystem layout and configures JetBrains Mono Nerd Font system-wide
@@ -24,7 +23,6 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
-- Optionally sets `OPENCODE_SERVER_PASSWORD` in the Windows User environment and WSL fish env for `opencode web/serve`
 - Terminates and restarts WSL2 to apply configuration
 
 ## Prerequisites
@@ -55,15 +53,14 @@ This project automates the complete configuration of a Windows 11 machine for de
 ## Projects & Tools Installed
 
 ### Windows Applications
-- 7-Zip, ImageGlass, VLC, Flow-Launcher, GlazeWM, Zebar, Git, WezTerm, thide
+- 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, wl-clipboard, Docker, sudo
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer
-- CLI: OpenCode
-- TUI tools: btop, lazygit, fastfetch, zoxide, atuin, bat
+- TUI tools: btop, lazygit, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 
 ## Folder Structure
