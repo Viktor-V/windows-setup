@@ -55,7 +55,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ### Windows Applications
 - 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm, chezmoi
-- Virtual-desktop helper: `VirtualDesktop.exe` (WezTerm opens on the Windows desktop «Консоль»)
+- Downloads `VirtualDesktop.exe` for the WezTerm virtual-desktop helper (opens on the Windows desktop «Консоль»)
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, wl-clipboard, Docker, sudo

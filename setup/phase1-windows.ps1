@@ -319,7 +319,9 @@ $lnkBytes[0x15] = $lnkBytes[0x15] -bor 0x20
 
 Write-Host "[OK] PowerShell admin shortcut created in Start Menu" -ForegroundColor Green
 
-Write-Host "[STEP 8] Applying Windows-side dotfiles..." -ForegroundColor Cyan
+Write-Host "[STEP 8] Installing Windows-side helper and applying dotfiles..." -ForegroundColor Cyan
+
+& "$PSScriptRoot\scripts\install_virtualdesktop.ps1"
 
 $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
 $chezmoiExe = (Get-Command chezmoi.exe -ErrorAction SilentlyContinue).Source
