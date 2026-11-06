@@ -13,6 +13,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font**
+- Installs **chezmoi** and applies Windows-side dotfiles (WezTerm, Flow Launcher, virtual-desktop helper)
 - Creates PowerShell admin profile with auto-elevation
 - Creates a `PowerShell Admin` shortcut in the Start menu (runs elevated)
 - Creates WSL2 filesystem layout and configures JetBrains Mono Nerd Font system-wide
@@ -53,7 +54,8 @@ This project automates the complete configuration of a Windows 11 machine for de
 ## Projects & Tools Installed
 
 ### Windows Applications
-- 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm
+- 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm, chezmoi
+- Virtual-desktop helper: `VirtualDesktop.exe` (WezTerm opens on the Windows desktop «Консоль»)
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, wl-clipboard, Docker, sudo

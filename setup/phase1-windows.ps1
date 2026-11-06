@@ -101,7 +101,8 @@ $exeApps = @(
     "VideoLAN.VLC",
     "Flow-Launcher.Flow-Launcher",
     "Git.Git",
-    "wez.wezterm"
+    "wez.wezterm",
+    "twpayne.chezmoi"
 )
 
 foreach ($app in $exeApps) { 
@@ -318,7 +319,35 @@ $lnkBytes[0x15] = $lnkBytes[0x15] -bor 0x20
 
 Write-Host "[OK] PowerShell admin shortcut created in Start Menu" -ForegroundColor Green
 
-Write-Host "[STEP 8] Checking WSL2 prerequisites..." -ForegroundColor Cyan
+Write-Host "[STEP 8] Applying Windows-side dotfiles..." -ForegroundColor Cyan
+
+$env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
+$chezmoiExe = (Get-Command chezmoi.exe -ErrorAction SilentlyContinue).Source
+if (-not $chezmoiExe) {
+    $chezmoiExe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "chezmoi.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+}
+
+if ($chezmoiExe) {
+    $chezmoiSource = & $chezmoiExe source-path 2>$null
+    if (-not $chezmoiSource -or -not (Test-Path -LiteralPath $chezmoiSource)) {
+        & $chezmoiExe init Viktor-V/dotfiles
+        if ($LASTEXITCODE -ne 0) {
+            throw "chezmoi init failed with exit code $LASTEXITCODE."
+        }
+    }
+
+    & $chezmoiExe apply
+    if ($LASTEXITCODE -ne 0) {
+        throw "chezmoi apply failed with exit code $LASTEXITCODE."
+    }
+
+    Write-Host "[OK] Windows-side dotfiles applied" -ForegroundColor Green
+}
+else {
+    Write-Warning "chezmoi.exe not found; Windows-side dotfiles were not applied."
+}
+
+Write-Host "[STEP 9] Checking WSL2 prerequisites..." -ForegroundColor Cyan
 
 Write-Host " -> Installing WSL2..." -ForegroundColor Yellow
 wsl --install --no-distribution | Out-Null
