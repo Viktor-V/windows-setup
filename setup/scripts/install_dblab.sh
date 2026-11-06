@@ -13,8 +13,16 @@ case "$ARCH" in
         ;;
 esac
 
-DBLAB_VERSION=$(curl -s https://api.github.com/repos/ivarcarrinst/dblab/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
-curl -L "https://github.com/ivarcarrinst/dblab/releases/download/${DBLAB_VERSION}/dblab-linux-${DBLAB_ARCH}" -o /usr/local/bin/dblab
-chmod +x /usr/local/bin/dblab
+DBLAB_VERSION=$(curl -fsSL https://api.github.com/repos/danvergara/dblab/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
+DBLAB_VER="${DBLAB_VERSION#v}"
+
+ASSET="dblab_${DBLAB_VER}_linux_${DBLAB_ARCH}.tar.gz"
+curl -fL "https://github.com/danvergara/dblab/releases/download/${DBLAB_VERSION}/${ASSET}" -o /tmp/dblab.tar.gz
+
+mkdir -p /tmp/dblab
+tar -xzf /tmp/dblab.tar.gz -C /tmp/dblab
+install -m 755 /tmp/dblab/dblab /usr/local/bin/dblab
+rm -f /tmp/dblab.tar.gz
+rm -rf /tmp/dblab
 
 echo "dblab installed: $(dblab --version 2>/dev/null || echo 'version unknown')"
