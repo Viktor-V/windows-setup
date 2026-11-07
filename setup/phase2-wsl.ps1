@@ -173,6 +173,12 @@ chmod 440 /etc/sudoers.d/${linuxUser}
 usermod -s /usr/bin/fish '${linuxUser}'
 "@
 
+Write-Host " -> Setting WSL time zone..." -ForegroundColor Cyan
+Invoke-WslBash -Command @"
+ln -sf /usr/share/zoneinfo/Europe/Riga /etc/localtime
+echo Europe/Riga > /etc/timezone
+"@
+
 Write-Host " -> Installing Starship prompt..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_starship.sh")
 

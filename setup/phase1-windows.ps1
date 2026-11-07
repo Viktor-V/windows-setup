@@ -409,4 +409,14 @@ Set-ItemProperty -Path $desktop -Name SCRNSAVE.EXE -Value 'C:\Windows\System32\s
 
 Write-Host " -> Lid close: do nothing; sleep/hibernate disabled; screen locks after 60s." -ForegroundColor Cyan
 
+Write-Host "[STEP 11] Setting time zone and syncing clock..." -ForegroundColor Cyan
+tzutil /s "FLE Standard Time"
+Set-Service w32time -StartupType Automatic -ErrorAction SilentlyContinue
+Start-Service w32time -ErrorAction SilentlyContinue
+w32tm /resync /force | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Clock resync returned exit code $LASTEXITCODE."
+}
+Write-Host " -> Time zone: FLE Standard Time; clock resynced." -ForegroundColor Cyan
+
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green

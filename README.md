@@ -13,6 +13,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs essential applications via Winget (ImageGlass, VLC, Git, etc.)
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Keeps the machine awake when the lid closes (SSH stays reachable) and locks the screen after 60s of inactivity
+- Sets the Windows time zone to **FLE Standard Time** and resyncs the clock
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font** and adds it to autostart
 - Installs **chezmoi** and applies Windows-side dotfiles (WezTerm, Flow Launcher, virtual-desktop helper)
 - Creates PowerShell admin profile with auto-elevation
@@ -21,6 +22,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ### Phase 2: WSL2 & Linux Environment
 - Sets up **Debian WSL2** distribution with Fish shell
+- Sets the WSL time zone to **Europe/Riga** (matches FLE Standard Time)
 - Installs base packages: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, etc.
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
