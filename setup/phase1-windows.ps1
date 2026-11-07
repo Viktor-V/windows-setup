@@ -439,4 +439,32 @@ $result = [UIntPtr]::Zero
 
 Write-Host " -> Date/time format: HH:mm and dd.MM.yyyy." -ForegroundColor Cyan
 
+Write-Host "[STEP 13] Adding WSL/Tailscale resume task..." -ForegroundColor Cyan
+
+try {
+    $resumeDir = 'C:\ProgramData\windows-setup'
+    New-Item -ItemType Directory -Path $resumeDir -Force | Out-Null
+    $resumeScript = Join-Path $resumeDir 'resume-wsl-tailscale.ps1'
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'scripts\resume-wsl-tailscale.ps1') -Destination $resumeScript -Force
+
+    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $resumeAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$resumeScript`""
+    $resumeQuery = @"
+<QueryList>
+  <Query Id="0" Path="System">
+    <Select Path="System">*[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter'] and EventID=1]]</Select>
+  </Query>
+</QueryList>
+"@
+    $eventClass = Get-CimClass -ClassName MSFT_TaskEventTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
+    $resumeTrigger = New-CimInstance -CimClass $eventClass -ClientOnly -Property @{ Enabled = $true; Subscription = $resumeQuery }
+    $resumePrincipal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
+    $resumeSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+    Register-ScheduledTask -TaskName 'ResumeWSLTailscale' -Action $resumeAction -Trigger $resumeTrigger -Principal $resumePrincipal -Settings $resumeSettings -Description 'Start WSL and reconnect Tailscale after sleep' -Force | Out-Null
+    Write-Host " -> Resume task registered." -ForegroundColor Cyan
+}
+catch {
+    Write-Warning "Could not register resume task: $($_.Exception.Message)"
+}
+
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
