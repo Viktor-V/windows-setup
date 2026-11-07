@@ -227,6 +227,12 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh
 Write-Host " -> Configuring Herdr..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\configure_herdr.sh")
 
+Write-Host " -> Installing Tailscale..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_tailscale.sh")
+
+Write-Host " -> Configuring WSL SSH server..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_wsl_ssh.sh")
+
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
 

@@ -24,6 +24,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
 - Installs **Herdr** and **OpenCode CLI**, enables the persistent Herdr server via systemd, and creates workspaces `Development`, `Translation`, `Common`
+- Installs **Tailscale** and **OpenSSH server** inside WSL for direct SSH access from a phone
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
 
@@ -53,6 +54,43 @@ This project automates the complete configuration of a Windows 11 machine for de
    - Login with your chosen username
    - WezTerm opens on «Консоль» and starts Herdr; run `opencode` inside a workspace and use `/connect` to add model providers
 
+## Phone Access (Tailscale + SSH)
+
+Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH server is not used.
+
+1. In WSL, log in to Tailscale:
+
+   ```sh
+   sudo tailscale up
+   ```
+
+   Open the printed URL and sign in with your Tailscale account.
+
+2. Get the WSL Tailscale IP:
+
+   ```sh
+   tailscale ip -4
+   ```
+
+3. Add the phone's SSH public key:
+
+   ```sh
+   mkdir -p ~/.ssh && chmod 700 ~/.ssh
+   echo 'ssh-ed25519 ...' >> ~/.ssh/authorized_keys
+   chmod 600 ~/.ssh/authorized_keys
+   ```
+
+4. In an SSH client on the phone (Termius, WebSSH, ShellFish, a-Shell, etc.):
+
+   - Host: the WSL Tailscale IP
+   - Port: `22`
+   - User: your Linux username
+   - Connection type: **SSH** (not Mosh)
+
+5. After login, run `herdr`. It attaches to the persistent session.
+
+The WSL node must be running. WezTerm autostarts on «Консоль», launches Herdr, and keeps WSL and its systemd services up.
+
 ## Projects & Tools Installed
 
 ### Windows Applications
@@ -65,6 +103,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Database client: dblab
 - Container management: Docker, Portainer
 - Agent workspace: Herdr (persistent server + systemd service), OpenCode CLI
+- Remote access: Tailscale (WSL node), OpenSSH server (WSL)
 - TUI tools: btop, lazygit, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 
