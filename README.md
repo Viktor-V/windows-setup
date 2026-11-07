@@ -23,6 +23,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs base packages: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, etc.
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
+- Installs **Herdr** and **OpenCode CLI**, enables the persistent Herdr server via systemd, and creates workspaces `Development`, `Translation`, `Common`
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
 
@@ -50,6 +51,7 @@ This project automates the complete configuration of a Windows 11 machine for de
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + JetBrains Mono Font
    - Login with your chosen username
+   - WezTerm opens on «Консоль» and starts Herdr; run `opencode` inside a workspace and use `/connect` to add model providers
 
 ## Projects & Tools Installed
 
@@ -62,6 +64,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer
+- Agent workspace: Herdr (persistent server + systemd service), OpenCode CLI
 - TUI tools: btop, lazygit, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 

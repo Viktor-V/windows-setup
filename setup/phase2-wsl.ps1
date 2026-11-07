@@ -218,6 +218,15 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_chezmoi.sh"
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 
+Write-Host " -> Installing Herdr..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_herdr.sh")
+
+Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh")
+
+Write-Host " -> Configuring Herdr..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\configure_herdr.sh")
+
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
 
@@ -237,5 +246,8 @@ Invoke-Wsl -Arguments @(
     "--cd", "/home/$linuxUser",
     "--exec", "id", $linuxUser
 )
+
+Write-Host " -> Finalizing Herdr..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\finalize_herdr.sh")
 
 Write-Host "`n[OK] Phase 2 completed successfully!" -ForegroundColor Green
