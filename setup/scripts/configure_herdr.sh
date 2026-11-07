@@ -26,7 +26,7 @@ User=$USER_NAME
 Environment=HOME=$USER_HOME
 Environment=USER=$USER_NAME
 Environment=LOGNAME=$USER_NAME
-Environment=PATH=$USER_HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=$USER_HOME/.local/bin:$USER_HOME/.opencode/bin:/usr/local/bin:/usr/bin:/bin
 WorkingDirectory=$USER_HOME
 ExecStart=$HERDR_BIN server
 Restart=always
