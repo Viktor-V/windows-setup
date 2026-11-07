@@ -44,11 +44,13 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 3. Enter password when prompted
 
-4. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
+4. Optionally paste the phone's SSH public key and choose whether to log in to Tailscale during Phase 2
 
-5. After reboot, login to Windows and the setup will automatically continue with Phase 2
+5. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
 
-6. Once complete:
+6. After reboot, login to Windows and the setup will automatically continue with Phase 2
+
+7. Once complete:
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + JetBrains Mono Font
    - Login with your chosen username
@@ -64,7 +66,7 @@ Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH serve
    sudo tailscale up
    ```
 
-   Open the printed URL and sign in with your Tailscale account.
+   Open the printed URL and sign in with your Tailscale account. If you chose to log in during setup, this is already done.
 
 2. Get the WSL Tailscale IP:
 
@@ -79,6 +81,8 @@ Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH serve
    echo 'ssh-ed25519 ...' >> ~/.ssh/authorized_keys
    chmod 600 ~/.ssh/authorized_keys
    ```
+
+   If you provided the key during setup, this is already done.
 
 4. In an SSH client on the phone (Termius, WebSSH, ShellFish, a-Shell, etc.):
 

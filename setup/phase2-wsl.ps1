@@ -3,7 +3,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Password,
     [Parameter(Mandatory = $true)]
-    [string]$Username
+    [string]$Username,
+    [string]$SshPubKey = "",
+    [switch]$TailscaleLogin
 )
 
 $ErrorActionPreference = "Stop"
@@ -230,8 +232,24 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\configure_herdr.sh"
 Write-Host " -> Installing Tailscale..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_tailscale.sh")
 
+if ($TailscaleLogin) {
+    Write-Host " -> Waiting for Tailscale login..." -ForegroundColor Cyan
+    Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\invite_tailscale_login.sh")
+}
+
 Write-Host " -> Configuring WSL SSH server..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_wsl_ssh.sh")
+
+if (-not [string]::IsNullOrWhiteSpace($SshPubKey)) {
+    Write-Host " -> Adding phone SSH public key..." -ForegroundColor Cyan
+    $sshKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($SshPubKey.Trim() + "`n"))
+    Invoke-WslBash -User $linuxUser -Command @"
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+printf '%s' '$sshKeyB64' | base64 -d >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+"@
+}
 
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")

@@ -83,6 +83,23 @@ if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $u
     $Username | Out-File -FilePath $usernameFile -Force
 
     Write-Host "[OK] Password saved for Phase 2" -ForegroundColor Green
+
+    Write-Host "`n[SSH] Phone SSH public key" -ForegroundColor Yellow
+    $sshKey = Read-Host "Paste the phone SSH public key (or press Enter to skip)"
+    if (-not [string]::IsNullOrWhiteSpace($sshKey)) {
+        if ($sshKey.Trim() -match '^(ssh-|ecdsa-|sk-)') {
+            $sshKey.Trim() | Out-File -FilePath (Join-Path $stageDir "ssh_pubkey.txt") -Force -Encoding ascii
+            Write-Host "[OK] SSH public key saved for Phase 2" -ForegroundColor Green
+        }
+        else {
+            Write-Warning "That does not look like an SSH public key; skipping."
+        }
+    }
+
+    Write-Host "`n[Tailscale] Login during setup?" -ForegroundColor Yellow
+    $tailscaleChoice = Read-Host "Log in to Tailscale during Phase 2? (Y/n)"
+    $tailscaleLogin = if ($tailscaleChoice -eq "n" -or $tailscaleChoice -eq "N") { "no" } else { "yes" }
+    $tailscaleLogin | Out-File -FilePath (Join-Path $stageDir "tailscale_login.txt") -Force -Encoding ascii
 }
 
 # PHASE 1: Windows Setup
@@ -196,8 +213,20 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         $Username = Get-Content $usernameFile | Select-Object -First 1
     }
 
+    $sshKey = ""
+    $sshKeyFile = Join-Path $stageDir "ssh_pubkey.txt"
+    if (Test-Path $sshKeyFile) {
+        $sshKey = (Get-Content $sshKeyFile -Raw).Trim()
+    }
+
+    $tailscaleLogin = $false
+    $tailscaleLoginFile = Join-Path $stageDir "tailscale_login.txt"
+    if (Test-Path $tailscaleLoginFile) {
+        $tailscaleLogin = ((Get-Content $tailscaleLoginFile -Raw).Trim() -eq "yes")
+    }
+
     try {
-        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username
+        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username -SshPubKey $sshKey -TailscaleLogin:$tailscaleLogin
 
         if (-not $?) {
             throw "Phase 2 script returned an error."
