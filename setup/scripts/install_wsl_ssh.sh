@@ -8,11 +8,23 @@ echo "Installing OpenSSH server..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
 
+cat > /usr/local/bin/herdr-ssh-shell <<'EOF'
+#!/bin/bash
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then
+    exec /bin/bash -c "$SSH_ORIGINAL_COMMAND"
+else
+    exec /usr/bin/fish -l
+fi
+EOF
+chmod 755 /usr/local/bin/herdr-ssh-shell
+
 cat > /etc/ssh/sshd_config.d/99-herdr.conf <<EOF
 PermitRootLogin no
 PasswordAuthentication no
 PubkeyAuthentication yes
 AllowUsers $USER_NAME
+ForceCommand /usr/local/bin/herdr-ssh-shell
 EOF
 
 install -d -m 700 -o "$USER_NAME" -g "$USER_NAME" "$USER_HOME/.ssh"
@@ -24,6 +36,12 @@ if [ -n "${SSH_PUBKEY:-}" ]; then
 fi
 
 sshd -t
-systemctl enable --now ssh
+systemctl enable ssh
+systemctl reload ssh 2>/dev/null || systemctl restart ssh
+
+if command -v loginctl >/dev/null 2>&1; then
+    loginctl enable-linger "$USER_NAME" 2>/dev/null || true
+fi
+
 echo "OpenSSH server is enabled."
 echo "Add the phone public key to $USER_HOME/.ssh/authorized_keys if it is not there yet."

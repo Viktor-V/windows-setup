@@ -58,7 +58,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 ## Phone Access (Tailscale + SSH)
 
-Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH server is not used.
+Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH server is not used. The WSL SSH server runs command channels through `bash` and interactive sessions through `fish`, which clients like HerdrChat need for their POSIX commands.
 
 1. In WSL, log in to Tailscale:
 
@@ -94,6 +94,18 @@ Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH serve
 5. After login, run `herdr`. It attaches to the persistent session.
 
 The WSL node must be running. WezTerm autostarts on «Консоль», launches Herdr, and keeps WSL and its systemd services up.
+
+### HerdrChat push notifications
+
+1. In HerdrChat, open **Settings → Notifications** and turn notifications on.
+2. Accept the offered watcher installation on the host.
+3. The app writes the device token over SSH; the watcher runs as a systemd user service and sends pushes through the HerdrChat relay.
+
+The setup enables systemd lingering for the WSL user so the watcher keeps running without an active login. Check it with:
+
+```sh
+systemctl --user status dev.herdr.herdrchat-notifier
+```
 
 ## Projects & Tools Installed
 
