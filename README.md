@@ -93,7 +93,7 @@ Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH serve
    - Host: the WSL Tailscale IP
    - Port: `22`
    - User: your Linux username
-   - Connection type: **SSH** (not Mosh)
+   - Connection type: **SSH** or **Mosh** (`mosh-server` is installed)
 
 5. After login, run `herdr`. It attaches to the persistent session.
 
@@ -123,7 +123,7 @@ systemctl --user status dev.herdr.herdrchat-notifier
 - Database client: dblab
 - Container management: Docker, Portainer
 - Agent workspace: Herdr (persistent server + systemd service), OpenCode CLI
-- Remote access: Tailscale (WSL node), OpenSSH server (WSL)
+- Remote access: Tailscale (WSL node), OpenSSH server (WSL), Mosh
 - TUI tools: btop, lazygit, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 
