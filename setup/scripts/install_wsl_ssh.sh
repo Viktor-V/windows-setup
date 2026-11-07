@@ -4,12 +4,9 @@ set -e
 USER_NAME="${USER_NAME:-${1:-user}}"
 USER_HOME="/home/$USER_NAME"
 
-echo "Installing OpenSSH server and Mosh..."
+echo "Installing OpenSSH server..."
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server mosh locales
-
-sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-locale-gen
+DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
 
 cat > /usr/local/bin/herdr-ssh-shell <<'EOF'
 #!/bin/bash
