@@ -419,4 +419,24 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host " -> Time zone: FLE Standard Time; clock resynced." -ForegroundColor Cyan
 
+Write-Host "[STEP 12] Setting date/time display format..." -ForegroundColor Cyan
+
+$intl = 'HKCU:\Control Panel\International'
+Set-ItemProperty -Path $intl -Name 'sShortDate' -Value 'dd-MMM-yy' -Force
+Set-ItemProperty -Path $intl -Name 'sShortTime' -Value 'HH:mm' -Force
+Set-ItemProperty -Path $intl -Name 'sTimeFormat' -Value 'HH:mm' -Force
+
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class IntlNotify {
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+}
+"@
+$result = [UIntPtr]::Zero
+[IntlNotify]::SendMessageTimeout([IntPtr]0xffff, 0x001A, [UIntPtr]::Zero, 'intl', 2, 1000, [ref]$result) | Out-Null
+
+Write-Host " -> Date/time format: HH:mm and dd-MMM-yy." -ForegroundColor Cyan
+
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
