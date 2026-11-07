@@ -14,7 +14,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Applies visual customizations (black theme, disabled lock screen, etc.)
 - Keeps the machine awake when the lid closes (SSH stays reachable) and locks the screen after 60s of inactivity
 - Sets the Windows time zone to **FLE Standard Time** and resyncs the clock
-- Sets the taskbar date/time display format to `HH:mm` and `dd-MMM-yy`
+- Sets the taskbar date/time display format to `HH:mm` and `dd.MM.yyyy`
 - Downloads and installs **WezTerm** terminal with **JetBrains Mono Nerd Font** and adds it to autostart
 - Installs **chezmoi** and applies Windows-side dotfiles (WezTerm, Flow Launcher, virtual-desktop helper)
 - Creates PowerShell admin profile with auto-elevation
