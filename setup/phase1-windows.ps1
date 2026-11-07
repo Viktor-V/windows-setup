@@ -378,4 +378,35 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  If you see a virtualization error, enable VT-x/AMD-V in your BIOS/UEFI settings." -ForegroundColor Yellow
 }
 
+Write-Host "[STEP 10] Configuring lid-close and lock behavior..." -ForegroundColor Cyan
+
+$scheme = ([regex]::Match((powercfg /getactivescheme), '[0-9a-fA-F-]{36}')).Value
+if (-not $scheme) {
+    $scheme = 'SCHEME_CURRENT'
+}
+
+# The lid action is hidden by default on some laptops; unhide it before setting.
+powercfg -attributes 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 -ATTRIB_HIDE
+
+# Closing the lid should keep the system running so SSH stays reachable.
+# 0 = Do nothing for the lid action.
+powercfg /setacvalueindex $scheme SUB_BUTTONS LIDACTION 0
+powercfg /setdcvalueindex $scheme SUB_BUTTONS LIDACTION 0
+
+# Keep the machine awake while it is plugged in or on battery.
+powercfg /setacvalueindex $scheme SUB_SLEEP STANDBYIDLE 0
+powercfg /setdcvalueindex $scheme SUB_SLEEP STANDBYIDLE 0
+powercfg /setacvalueindex $scheme SUB_SLEEP HIBERNATEIDLE 0
+powercfg /setdcvalueindex $scheme SUB_SLEEP HIBERNATEIDLE 0
+powercfg /setactive $scheme
+
+# Lock after a minute of inactivity; the closed lid already turns the display off.
+$desktop = 'HKCU:\Control Panel\Desktop'
+Set-ItemProperty -Path $desktop -Name ScreenSaveActive -Value '1' -Force
+Set-ItemProperty -Path $desktop -Name ScreenSaverIsSecure -Value '1' -Force
+Set-ItemProperty -Path $desktop -Name ScreenSaveTimeOut -Value '60' -Force
+Set-ItemProperty -Path $desktop -Name SCRNSAVE.EXE -Value 'C:\Windows\System32\scrnsave.scr' -Force
+
+Write-Host " -> Lid close: do nothing; sleep/hibernate disabled; screen locks after 60s." -ForegroundColor Cyan
+
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
