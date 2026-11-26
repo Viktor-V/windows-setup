@@ -583,7 +583,7 @@ if (Test-Path -LiteralPath $app) {
     while ((Get-Date) -lt $deadline) {
         try {
             $tcp = New-Object System.Net.Sockets.TcpClient
-            $tcp.Connect('127.0.0.1', 4097)
+            $tcp.Connect('127.0.0.1', 4096)
             $tcp.Close()
             break
         }

@@ -310,7 +310,7 @@ if (-not $SkipPhase2) {
         Write-Host " 1. Portainer UI is live at http://localhost:9000" -ForegroundColor Cyan
         Write-Host " 2. Open Debian terminal to see Fish + JetBrains Mono Font!" -ForegroundColor Cyan
         Write-Host " 3. Login: $Username" -ForegroundColor Cyan
-        Write-Host " 4. OpenCode server (WSL): http://localhost:4097" -ForegroundColor Cyan
+        Write-Host " 4. OpenCode server (WSL): http://localhost:4096" -ForegroundColor Cyan
         Write-Host " 5. Desktop: Settings -> Pairing, paste a link from 'opencode pair'" -ForegroundColor Cyan
         Write-Host " 6. Phone: run 'ocpair' in Debian and scan the QR code" -ForegroundColor Cyan
         Write-Host "    Server password: $env:USERPROFILE\.config\opencode\server-password" -ForegroundColor Cyan

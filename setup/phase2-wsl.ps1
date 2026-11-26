@@ -276,6 +276,13 @@ Invoke-WslBash -User $linuxUser -Command @"
 mkdir -p ~/projects/development ~/projects/common
 "@
 
+# Make sure a Windows-side server cannot occupy port 4096 before WSL binds it.
+$windowsOpenCode = (Get-Command opencode.exe -ErrorAction SilentlyContinue).Path
+if ($windowsOpenCode) {
+    & $windowsOpenCode service stop 2>$null | Out-Null
+    & $windowsOpenCode service set disabled true 2>$null | Out-Null
+}
+
 Write-Host " -> Configuring OpenCode server in WSL..." -ForegroundColor Cyan
 $passwordB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($OpenCodePassword))
 
@@ -288,20 +295,20 @@ printf '%s' '__PASSWORD_B64__' | base64 -d > "$HOME/.config/opencode/server-pass
 chmod 600 "$HOME/.config/opencode/server-password"
 
 "$OPENCODE" service set hostname 0.0.0.0
-"$OPENCODE" service set port 4097
+"$OPENCODE" service set port 4096
 OC_PASSWORD=$(cat "$HOME/.config/opencode/server-password")
 "$OPENCODE" service set password "$OC_PASSWORD"
 "$OPENCODE" service start
 
 for i in $(seq 1 30); do
     if "$OPENCODE" service status >/dev/null 2>&1 &&
-       curl -fsS --max-time 5 -u "opencode:$OC_PASSWORD" http://127.0.0.1:4097/api/info >/dev/null 2>&1; then
+       curl -fsS --max-time 5 -u "opencode:$OC_PASSWORD" http://127.0.0.1:4096/api/info >/dev/null 2>&1; then
         break
     fi
     sleep 2
 done
 "$OPENCODE" service status
-curl -fsS --max-time 5 -u "opencode:$OC_PASSWORD" http://127.0.0.1:4097/api/info >/dev/null
+curl -fsS --max-time 5 -u "opencode:$OC_PASSWORD" http://127.0.0.1:4096/api/info >/dev/null
 
 # Remove the helper from the old Windows-hosted server design.
 rm -f "$HOME/.local/bin/opencode-tui"
@@ -365,7 +372,7 @@ $windowsPasswordFile = Join-Path $opencodeConfigDir "server-password"
     $utf8NoBom
 )
 Protect-SecretFile $windowsPasswordFile
-"http://localhost:4097" | Set-Content -LiteralPath (Join-Path $opencodeConfigDir "server-url.txt") -NoNewline -Encoding ascii
+"http://localhost:4096" | Set-Content -LiteralPath (Join-Path $opencodeConfigDir "server-url.txt") -NoNewline -Encoding ascii
 
 $startWslContent = @'
 $ErrorActionPreference = 'SilentlyContinue'
@@ -441,7 +448,7 @@ catch {
     Write-Warning "Could not register the OpenCode watchdog task: $($_.Exception.Message)"
 }
 
-Write-Host " -> OpenCode server: http://localhost:4097 (WSL), autostart enabled." -ForegroundColor Cyan
+Write-Host " -> OpenCode server: http://localhost:4096 (WSL), autostart enabled." -ForegroundColor Cyan
 
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
@@ -501,13 +508,20 @@ Invoke-Wsl -Arguments @(
 )
 
 $opencodeReachable = $false
+$basicAuth = [Convert]::ToBase64String(
+    [Text.Encoding]::ASCII.GetBytes("opencode:$OpenCodePassword")
+)
 for ($i = 1; $i -le 10; $i++) {
     try {
-        $tcp = New-Object System.Net.Sockets.TcpClient
-        $tcp.Connect("127.0.0.1", 4097)
-        $tcp.Close()
-        $opencodeReachable = $true
-        break
+        $response = Invoke-WebRequest `
+            -Uri "http://localhost:4096/api/info" `
+            -Headers @{ Authorization = "Basic $basicAuth" } `
+            -UseBasicParsing `
+            -TimeoutSec 10
+        if ($response.StatusCode -eq 200) {
+            $opencodeReachable = $true
+            break
+        }
     }
     catch {
         Start-Sleep -Seconds 1
@@ -515,10 +529,10 @@ for ($i = 1; $i -le 10; $i++) {
 }
 
 if ($opencodeReachable) {
-    Write-Host " -> OpenCode is reachable from Windows at http://localhost:4097" -ForegroundColor Green
+    Write-Host " -> OpenCode is reachable from Windows at http://localhost:4096" -ForegroundColor Green
 }
 else {
-    Write-Warning "OpenCode is not reachable from Windows on port 4097. Check WSL localhostForwarding or use the WSL IP."
+    Write-Warning "OpenCode is not reachable with the configured password on port 4096. Another service may be using the port."
 }
 
 Write-Host "`n[OK] Phase 2 completed successfully!" -ForegroundColor Green
