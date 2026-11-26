@@ -41,9 +41,23 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -AllowClobber
+          $ErrorActionPreference = 'Stop'
+          $version = '1.25.0'
+          $zip = Join-Path $env:RUNNER_TEMP 'PSScriptAnalyzer.zip'
+          $root = Join-Path $env:RUNNER_TEMP 'PSScriptAnalyzer'
+
+          # Download the pinned module directly instead of using
+          # Install-Module/Install-PackageProvider, which is flaky on CI.
+          Invoke-WebRequest `
+            -Uri "https://www.powershellgallery.com/api/v2/package/PSScriptAnalyzer/$version" `
+            -OutFile $zip `
+            -UseBasicParsing
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          if (Test-Path $root) { Remove-Item -LiteralPath $root -Recurse -Force }
+          New-Item -ItemType Directory -Path $root | Out-Null
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $root)
+          Import-Module (Join-Path $root 'PSScriptAnalyzer.psd1') -Force
+
           $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
           $results | Format-Table -AutoSize
           if ($results) { exit 1 }
