@@ -13,16 +13,20 @@ case "$ARCH" in
         ;;
 esac
 
-LAZYGIT_VERSION=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
+LAZYGIT_VERSION="v0.66.3"
 LAZYGIT_VER="${LAZYGIT_VERSION#v}"
 
 ASSET="lazygit_${LAZYGIT_VER}_linux_${LAZYGIT_ARCH}.tar.gz"
-curl -fL "https://github.com/jesseduffield/lazygit/releases/download/${LAZYGIT_VERSION}/${ASSET}" -o /tmp/lazygit.tar.gz
+URL="https://github.com/jesseduffield/lazygit/releases/download/${LAZYGIT_VERSION}"
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
 
-mkdir -p /tmp/lazygit
-tar -xzf /tmp/lazygit.tar.gz -C /tmp/lazygit
-install -m 755 /tmp/lazygit/lazygit /usr/local/bin/lazygit
-rm -f /tmp/lazygit.tar.gz
-rm -rf /tmp/lazygit
+curl -fL "${URL}/${ASSET}" -o "$tmpdir/$ASSET"
+curl -fsSL "${URL}/checksums.txt" -o "$tmpdir/checksums.txt"
+grep "  ${ASSET}$" "$tmpdir/checksums.txt" > "$tmpdir/$ASSET.sha256"
+(cd "$tmpdir" && sha256sum -c "$ASSET.sha256")
+
+tar -xzf "$tmpdir/$ASSET" -C "$tmpdir"
+install -m 755 "$tmpdir/lazygit" /usr/local/bin/lazygit
 
 echo "lazygit installed: $(lazygit --version 2>/dev/null || echo 'version unknown')"

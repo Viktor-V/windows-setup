@@ -6,8 +6,8 @@ USER_NAME="${USER_NAME:-${1:-user}}"
 echo "Applying dotfiles with chezmoi..."
 
 if ! command -v chezmoi >/dev/null 2>&1; then
-    echo "chezmoi not installed, skipping dotfiles."
-    exit 0
+    echo "chezmoi is not installed; cannot apply dotfiles." >&2
+    exit 1
 fi
 
 # Apply dotfiles as the real user so files land in /home/$USER_NAME.

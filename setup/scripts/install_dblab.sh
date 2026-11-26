@@ -13,16 +13,20 @@ case "$ARCH" in
         ;;
 esac
 
-DBLAB_VERSION=$(curl -fsSL https://api.github.com/repos/danvergara/dblab/releases/latest | grep '"tag_name"' | sed 's/.*"\([^"]*\)".*/\1/')
+DBLAB_VERSION="v0.55.2"
 DBLAB_VER="${DBLAB_VERSION#v}"
 
 ASSET="dblab_${DBLAB_VER}_linux_${DBLAB_ARCH}.tar.gz"
-curl -fL "https://github.com/danvergara/dblab/releases/download/${DBLAB_VERSION}/${ASSET}" -o /tmp/dblab.tar.gz
+URL="https://github.com/danvergara/dblab/releases/download/${DBLAB_VERSION}"
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
 
-mkdir -p /tmp/dblab
-tar -xzf /tmp/dblab.tar.gz -C /tmp/dblab
-install -m 755 /tmp/dblab/dblab /usr/local/bin/dblab
-rm -f /tmp/dblab.tar.gz
-rm -rf /tmp/dblab
+curl -fL "${URL}/${ASSET}" -o "$tmpdir/$ASSET"
+curl -fsSL "${URL}/checksums.txt" -o "$tmpdir/checksums.txt"
+grep "  ${ASSET}$" "$tmpdir/checksums.txt" > "$tmpdir/$ASSET.sha256"
+(cd "$tmpdir" && sha256sum -c "$ASSET.sha256")
+
+tar -xzf "$tmpdir/$ASSET" -C "$tmpdir"
+install -m 755 "$tmpdir/dblab" /usr/local/bin/dblab
 
 echo "dblab installed: $(dblab --version 2>/dev/null || echo 'version unknown')"

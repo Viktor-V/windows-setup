@@ -9,6 +9,25 @@ $ErrorActionPreference = "Stop"
 $taskName = "ResumeDevSetup"
 $stageDir = Join-Path $env:USERPROFILE "WSL_Stage"
 
+function Wait-ForUser {
+    param([string]$Message = "Press Enter to close...")
+    if (-not $Auto) {
+        Read-Host $Message | Out-Null
+    }
+}
+
+function Protect-SecretFile {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    & icacls.exe $Path /inheritance:r /grant:r "$($identity):(F)" "*S-1-5-18:(F)" "*S-1-5-32-544:(F)" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not restrict permissions on $Path."
+    }
+}
+
 Clear-Host
 Write-Host @"
 ========================================
@@ -26,7 +45,7 @@ $isAdmin = $windowsPrincipal.IsInRole(
 if (-not $isAdmin) {
     Write-Host "[ERROR] This script requires Administrator privileges!" -ForegroundColor Red
     Write-Host "Please run PowerShell as Administrator." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit..."
+    Wait-ForUser "Press Enter to exit..."
     exit 1
 }
 
@@ -51,9 +70,10 @@ if (-not $Auto) {
 # Create staging directory
 New-Item -Path $stageDir -ItemType Directory -Force | Out-Null
 
-# Ask for password only on the first run, or when the saved password is missing
+# Ask for the WSL password only on the first run, or when the saved password is missing.
 $passwordFile = Join-Path $stageDir "password.sec"
 $usernameFile = Join-Path $stageDir "username.txt"
+$ocPasswordFile = Join-Path $stageDir "opencode_password.txt"
 
 if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $usernameFile))) {
     Write-Host "`n[SECURITY] Creating WSL user account" -ForegroundColor Yellow
@@ -71,7 +91,7 @@ if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $u
 
     if ([string]::IsNullOrWhiteSpace($password)) {
         Write-Host "[ERROR] Password cannot be empty!" -ForegroundColor Red
-        Read-Host "Press Enter to exit..."
+        Wait-ForUser "Press Enter to exit..."
         exit 1
     }
 
@@ -79,17 +99,49 @@ if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $u
     $securePassword |
         ConvertFrom-SecureString |
         Out-File -FilePath $passwordFile -Force
+    Protect-SecretFile $passwordFile
 
     $Username | Out-File -FilePath $usernameFile -Force
 
     Write-Host "[OK] Password saved for Phase 2" -ForegroundColor Green
+}
 
-    Write-Host "`n[OpenCode] Server password" -ForegroundColor Yellow
-    Write-Host "Press Enter to generate a random password, or type your own." -ForegroundColor White
-    $ocSecure = Read-Host -AsSecureString
-    $ocPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ocSecure)
-    )
+# OpenCode password: reuse the saved value on retries so Windows and WSL never diverge.
+$ocPassword = ""
+if (Test-Path $ocPasswordFile) {
+    $ocPassword = [System.IO.File]::ReadAllText(
+        $ocPasswordFile,
+        [System.Text.Encoding]::UTF8
+    ).Trim()
+}
+
+if (-not [string]::IsNullOrWhiteSpace($ocPassword) -and $ocPassword.Length -lt 20) {
+    Write-Warning "The saved OpenCode password is shorter than 20 characters. Generating a new one; re-pair clients after setup."
+    $ocPassword = ""
+}
+
+if ([string]::IsNullOrWhiteSpace($ocPassword)) {
+    if (-not $Auto) {
+        while ($true) {
+            Write-Host "`n[OpenCode] Server password" -ForegroundColor Yellow
+            Write-Host "Press Enter to generate a random password, or type one with at least 20 characters." -ForegroundColor White
+            $ocSecure = Read-Host -AsSecureString
+            $candidate = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ocSecure)
+            )
+
+            if ([string]::IsNullOrWhiteSpace($candidate)) {
+                break
+            }
+            if ($candidate.Length -lt 20) {
+                Write-Host "[ERROR] OpenCode password must be at least 20 characters, or press Enter to generate one." -ForegroundColor Red
+                continue
+            }
+            $ocPassword = $candidate
+            break
+        }
+    }
+
     if ([string]::IsNullOrWhiteSpace($ocPassword)) {
         $ocPassword = [guid]::NewGuid().ToString('N')
         Write-Host "[OK] Generated OpenCode server password." -ForegroundColor Green
@@ -97,7 +149,17 @@ if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $u
     else {
         Write-Host "[OK] OpenCode server password saved." -ForegroundColor Green
     }
-    $ocPassword | Out-File -FilePath (Join-Path $stageDir "opencode_password.txt") -Force -Encoding ascii
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($ocPasswordFile, $ocPassword, $utf8NoBom)
+    Protect-SecretFile $ocPasswordFile
+}
+else {
+    Write-Host "[OK] Reusing saved OpenCode server password." -ForegroundColor Green
+}
+
+if (Test-Path $ocPasswordFile) {
+    Protect-SecretFile $ocPasswordFile
 }
 
 # PHASE 1: Windows Setup
@@ -106,11 +168,11 @@ if (-not $SkipPhase1) {
     Write-Host "   PHASE 1: Windows Configuration & Applications" -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
 
-    & "$PSScriptRoot\phase1-windows.ps1" -WslUser $Username -OpenCodePassword $ocPassword
+    & "$PSScriptRoot\phase1-windows.ps1" -WslUser $Username
 
     if (-not $?) {
         Write-Host "[ERROR] Phase 1 failed!" -ForegroundColor Red
-        Read-Host "Press Enter to exit..."
+        Wait-ForUser "Press Enter to exit..."
         exit 1
     }
 
@@ -179,15 +241,13 @@ if (-not $SkipPhase1) {
     else {
         Write-Host "Please restart manually and run PowerShell as Administrator:" -ForegroundColor Cyan
         Write-Host ".\setup.ps1 -SkipPhase1" -ForegroundColor White
-        Read-Host "Press Enter to close..."
+        Wait-ForUser "Press Enter to close..."
         exit
     }
 }
 
 # PHASE 2: WSL & Dev Tools
-$phase1Marker = Join-Path $stageDir "phase1_done.txt"
-
-if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
+if (-not $SkipPhase2) {
     Write-Host "`n====================================================" -ForegroundColor Cyan
     Write-Host "   PHASE 2: WSL Environment & Development Tools" -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
@@ -200,6 +260,9 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         )
     }
     elseif (-not $password) {
+        if ($Auto) {
+            throw "WSL password is missing. Re-run setup.ps1 interactively."
+        }
         Write-Host "Enter password for user '$Username':" -ForegroundColor White
         $securePassword = Read-Host -AsSecureString
         $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
@@ -211,8 +274,9 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         $Username = Get-Content $usernameFile | Select-Object -First 1
     }
 
-    $ocPasswordFile = Join-Path $stageDir "opencode_password.txt"
-    $ocPassword = if (Test-Path $ocPasswordFile) { (Get-Content $ocPasswordFile -Raw).Trim() } else { "" }
+    if ([string]::IsNullOrWhiteSpace($Username)) {
+        throw "WSL username is missing. Re-run setup.ps1 interactively."
+    }
 
     try {
         & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username -OpenCodePassword $ocPassword
@@ -246,15 +310,19 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         Write-Host " 1. Portainer UI is live at http://localhost:9000" -ForegroundColor Cyan
         Write-Host " 2. Open Debian terminal to see Fish + JetBrains Mono Font!" -ForegroundColor Cyan
         Write-Host " 3. Login: $Username" -ForegroundColor Cyan
+        Write-Host " 4. OpenCode server (WSL): http://localhost:4096" -ForegroundColor Cyan
+        Write-Host " 5. Desktop: Settings -> Pairing, paste a link from 'opencode pair'" -ForegroundColor Cyan
+        Write-Host " 6. Phone: run 'ocpair' in Debian and scan the QR code" -ForegroundColor Cyan
+        Write-Host "    Server password: $env:USERPROFILE\.config\opencode\server-password" -ForegroundColor Cyan
         Write-Host "====================================================" -ForegroundColor Green
     }
     catch {
         Write-Host "`n[ERROR] Phase 2 failed:" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         Write-Host "The scheduled task was kept, so setup can be retried after the next login." -ForegroundColor Yellow
-        Read-Host "Press Enter to close..."
+        Wait-ForUser "Press Enter to close..."
         exit 1
     }
 }
 
-Read-Host "Press Enter to close..."
+Wait-ForUser "Press Enter to close..."

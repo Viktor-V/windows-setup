@@ -950,7 +950,14 @@ function Test-InternetConnection {
 }
 
 Write-Log 'Waiting for internet connection...';
+$internetAttempts = 0;
 while (-not (Test-InternetConnection)) {
+    $internetAttempts++;
+    if ($internetAttempts -ge 60) {
+        Write-Host '[ERROR] No internet connection after 10 minutes. Exiting.' -ForegroundColor Red;
+        Write-Log 'No internet after 10 minutes. Exiting.';
+        exit 1;
+    }
     Write-Host ' -> No internet connection. Please connect to a network and wait...' -ForegroundColor Yellow;
     Write-Log 'No internet. Waiting 10 seconds...';
     Start-Sleep -Seconds 10;

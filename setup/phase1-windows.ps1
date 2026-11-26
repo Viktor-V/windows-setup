@@ -1,8 +1,16 @@
 ﻿# phase1-windows.ps1 - Windows Configuration & Applications
 param(
-    [string]$WslUser = "user",
-    [string]$OpenCodePassword = ""
+    [string]$WslUser = "user"
 )
+
+$script:setupWarnings = New-Object System.Collections.Generic.List[string]
+$script:wingetFailures = New-Object System.Collections.Generic.List[string]
+
+function Add-SetupWarning {
+    param([string]$Message)
+    Write-Warning $Message
+    $script:setupWarnings.Add($Message) | Out-Null
+}
 
 Write-Host "[STEP 2] Applying Windows 11 interface and black personalization tweaks..." -ForegroundColor Cyan
 
@@ -95,7 +103,7 @@ for ($i = 1; $i -le $netTimeout; $i++) {
     Start-Sleep -Seconds 5
 }
 if (-not $connected) {
-    Write-Warning "Network unavailable after $netTimeout attempts - continuing anyway"
+    Add-SetupWarning "Network unavailable after $netTimeout attempts - continuing anyway"
 }
 
 Write-Host "[STEP 4] Downloading and processing app manifests via WinGet..." -ForegroundColor Cyan
@@ -106,19 +114,38 @@ $exeApps = @(
     "Flow-Launcher.Flow-Launcher",
     "Git.Git",
     "wez.wezterm",
-    "twpayne.chezmoi"
+    "twpayne.chezmoi",
+    "Anomaly.OpenCode",
+    "Anomaly.OpenCode.Desktop"
 )
 
-foreach ($app in $exeApps) { 
-    Write-Host " -> Installing $app..." -ForegroundColor Yellow
-    winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
+$wingetAvailable = [bool](Get-Command winget.exe -ErrorAction SilentlyContinue)
+if (-not $wingetAvailable) {
+    Add-SetupWarning "WinGet is not available; applications were not installed."
 }
 
-Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Yellow
-winget install --id Anomaly.OpenCode -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade
+foreach ($app in $exeApps) {
+    if (-not $wingetAvailable) {
+        break
+    }
+    Write-Host " -> Installing $app..." -ForegroundColor Yellow
+    winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade
+    if ($LASTEXITCODE -ne 0) {
+        $message = "WinGet failed for $app (exit code $LASTEXITCODE)."
+        $script:wingetFailures.Add($message) | Out-Null
+        Add-SetupWarning $message
+    }
+}
+
+if ($script:wingetFailures.Count -gt 0) {
+    Write-Warning "Some applications could not be installed. Review the warnings above before continuing."
+}
 
 Write-Host " -> Enabling WezTerm autostart..." -ForegroundColor Yellow
-$weztermExe = "$env:ProgramFiles\WezTerm\wezterm-gui.exe"
+$weztermExe = (Get-Command wezterm-gui.exe -ErrorAction SilentlyContinue).Path
+if (-not $weztermExe) {
+    $weztermExe = "$env:ProgramFiles\WezTerm\wezterm-gui.exe"
+}
 if (Test-Path -LiteralPath $weztermExe) {
     $startupDir = [Environment]::GetFolderPath('Startup')
     $weztermShortcut = Join-Path $startupDir 'WezTerm.lnk'
@@ -131,7 +158,7 @@ if (Test-Path -LiteralPath $weztermExe) {
     Write-Host "   WezTerm autostart enabled." -ForegroundColor Cyan
 }
 else {
-    Write-Warning "   WezTerm executable not found at $weztermExe; autostart not configured."
+    Add-SetupWarning "WezTerm executable not found at $weztermExe; autostart not configured."
 }
 
 Write-Host " -> Registering ImageGlass as image viewer..." -ForegroundColor Yellow
@@ -183,74 +210,110 @@ public class SetImageAssocShNotify {
 }
 "@
         [SetImageAssocShNotify]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
-        Write-Host "   ImageGlass is now the default image handler." -ForegroundColor Cyan
+
+        $missingAssociations = @()
+        foreach ($ext in $imageExts) {
+            $key = Get-Item -LiteralPath "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue
+            $defaultValue = if ($key) { $key.GetValue('') } else { $null }
+            if ($defaultValue -ne $imageProgId) {
+                $missingAssociations += $ext
+            }
+        }
+        if ($missingAssociations.Count -gt 0) {
+            Add-SetupWarning "ImageGlass association was not applied for: $($missingAssociations -join ', ')"
+        }
+        else {
+            Write-Host "   ImageGlass is now the default image handler." -ForegroundColor Cyan
+        }
     }
     catch {
-        Write-Warning "   Could not set ImageGlass as default: $($_.Exception.Message)"
+        Add-SetupWarning "Could not set ImageGlass as default: $($_.Exception.Message)"
     }
 }
 else {
-    Write-Warning "   ImageGlass executable not found; image association not configured."
+    Add-SetupWarning "ImageGlass executable not found; image association not configured."
 }
 
 Write-Host "[STEP 5] Deploying JetBrains Mono Nerd Font for WezTerm..." -ForegroundColor Cyan
 
-# Download and install JetBrains Mono Nerd Font
 $fontTempDir = "$env:TEMP\JetBrainsMonoNerdFont"
 $fontZip = "$fontTempDir\JetBrainsMono.zip"
-$fontUrl = "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-
-Write-Host " -> Creating temporary directory..." -ForegroundColor Yellow
-New-Item -ItemType Directory -Path $fontTempDir -Force | Out-Null
-
-Write-Host " -> Downloading JetBrains Mono Nerd Font..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri $fontUrl -OutFile $fontZip -UseBasicParsing
-
-Write-Host " -> Extracting font files..." -ForegroundColor Yellow
-Expand-Archive -Path $fontZip -DestinationPath $fontTempDir -Force
-
-Write-Host " -> Installing font files..." -ForegroundColor Yellow
-$fontFiles = Get-ChildItem -Path $fontTempDir -Filter "*.ttf" -Recurse
-
-# Install per-user: copy to LOCALAPPDATA fonts dir and register in HKCU.
-$userFontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
-if (-not (Test-Path $userFontDir)) {
-    New-Item -ItemType Directory -Path $userFontDir -Force | Out-Null
-}
-
-$fontRegPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
-
-Add-Type -AssemblyName System.Drawing
-
-foreach ($fontFile in $fontFiles) {
-    Copy-Item -Path $fontFile.FullName -Destination $userFontDir -Force
-
-    # Read the real family name from the TTF so the registry entry matches.
-    $pfc = New-Object System.Drawing.Text.PrivateFontCollection
-    $pfc.AddFontFile($fontFile.FullName)
-    $familyName = $pfc.Families[0].Name
-    $pfc.Dispose()
-
-    if ($familyName) {
-        New-ItemProperty -Path $fontRegPath -Name "$familyName (TrueType)" -Value $fontFile.Name -PropertyType String -Force | Out-Null
-    }
-}
+$fontVersion = "v3.5.1"
+$fontUrl = "https://github.com/ryanoasis/nerd-fonts/releases/download/$fontVersion/JetBrainsMono.zip"
+$fontChecksumUrl = "https://github.com/ryanoasis/nerd-fonts/releases/download/$fontVersion/SHA-256.txt"
+$previousEap = $ErrorActionPreference
 
 try {
-    Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
+    $ErrorActionPreference = "Stop"
+
+    Write-Host " -> Creating temporary directory..." -ForegroundColor Yellow
+    New-Item -ItemType Directory -Path $fontTempDir -Force | Out-Null
+
+    Write-Host " -> Downloading JetBrains Mono Nerd Font..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $fontUrl -OutFile $fontZip -UseBasicParsing
+    Invoke-WebRequest -Uri $fontChecksumUrl -OutFile "$fontTempDir\SHA-256.txt" -UseBasicParsing
+
+    $checksumLine = Get-Content "$fontTempDir\SHA-256.txt" |
+        Where-Object { $_ -match '\s+JetBrainsMono\.zip$' } |
+        Select-Object -First 1
+    $expectedHash = if ($checksumLine) { ($checksumLine -split '\s+')[0].ToLowerInvariant() } else { "" }
+    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $fontZip).Hash.ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($expectedHash) -or $actualHash -ne $expectedHash) {
+        throw "JetBrainsMono.zip checksum verification failed."
+    }
+
+    Write-Host " -> Extracting font files..." -ForegroundColor Yellow
+    Expand-Archive -Path $fontZip -DestinationPath $fontTempDir -Force
+
+    $fontFiles = @(Get-ChildItem -Path $fontTempDir -Filter "*.ttf" -Recurse)
+    if ($fontFiles.Count -eq 0) {
+        throw "No .ttf files found in the downloaded archive."
+    }
+
+    Write-Host " -> Installing font files..." -ForegroundColor Yellow
+    $userFontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+    if (-not (Test-Path $userFontDir)) {
+        New-Item -ItemType Directory -Path $userFontDir -Force | Out-Null
+    }
+
+    $fontRegPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+
+    foreach ($fontFile in $fontFiles) {
+        $destination = Join-Path $userFontDir $fontFile.Name
+        Copy-Item -LiteralPath $fontFile.FullName -Destination $destination -Force
+
+        # One registry value per face. The value data must be the full font path
+        # for per-user fonts; using the family name for every face overwrote
+        # Bold/Italic entries with the last file.
+        $registryName = "$($fontFile.BaseName) (TrueType)"
+        New-ItemProperty -Path $fontRegPath -Name $registryName -Value $destination -PropertyType String -Force | Out-Null
+    }
+
+    try {
+        Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition @"
 [DllImport("user32.dll", SetLastError = true)]
 public static extern int SendMessageTimeout(int hWnd, uint Msg, int wParam, int lParam, uint fuFlags, uint uTimeout, out int lpdwResult);
 "@
-    $result = 0
-    [Win32.NativeMethods]::SendMessageTimeout(0xffff, 0x001D, 0, 0, 2, 1000, [ref] $result) | Out-Null
-    Write-Host " -> System font message sent (legacy UI update)" -ForegroundColor Green
+        $result = 0
+        [Win32.NativeMethods]::SendMessageTimeout(0xffff, 0x001D, 0, 0, 2, 1000, [ref] $result) | Out-Null
+        Write-Host " -> System font message sent (legacy UI update)" -ForegroundColor Green
+    }
+    catch {
+        Write-Warning " -> Failed to notify system of font change (can be ignored); font files are registered"
+    }
+
+    Write-Host "[OK] JetBrains Mono Nerd Font installed for the current user." -ForegroundColor Green
 }
 catch {
-    Write-Warning " -> Failed to notify system of font change (can be ignored); font files already copied"
+    Add-SetupWarning "JetBrains Mono Nerd Font installation failed: $($_.Exception.Message)"
 }
-
-Write-Host " -> Cleaning up temporary files..." -ForegroundColor Yellow
-Remove-Item -Path $fontTempDir -Recurse -Force
+finally {
+    $ErrorActionPreference = $previousEap
+    Write-Host " -> Cleaning up temporary files..." -ForegroundColor Yellow
+    if (Test-Path $fontTempDir) {
+        Remove-Item -Path $fontTempDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 Write-Host "[STEP 6] Configuring PowerShell profile..." -ForegroundColor Cyan
 
@@ -281,15 +344,23 @@ $adminProfileContent = @"
 
 if (-not `$isAdmin) {
     Write-Host "Relaunching PowerShell with administrator privileges..." -ForegroundColor Yellow
-    Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "' + `$MyInvocation.MyCommand.Path + '"'
+    Start-Process -FilePath "powershell.exe" -Verb RunAs
     Exit
 }
 
 Write-Host "Running with administrator privileges" -ForegroundColor Green
 
-Set-Alias -Name ll -Value 'ls -lah' -Option AllScope
-Set-Alias -Name gs -Value 'git status' -Option AllScope
-Set-Alias -Name gc -Value 'git commit' -Option AllScope
+function ll {
+    Get-ChildItem -Force
+}
+
+function gs {
+    git status @args
+}
+
+function gc {
+    git commit @args
+}
 
 function Restart-WSL {
     Write-Host "Restarting WSL..." -ForegroundColor Cyan
@@ -330,7 +401,7 @@ $shortcutPath = Join-Path $startMenuDir "PowerShell Admin.lnk"
 $wshell = New-Object -ComObject WScript.Shell
 $shortcut = $wshell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-$shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass"
+$shortcut.Arguments = "-ExecutionPolicy Bypass"
 $shortcut.WorkingDirectory = "$env:USERPROFILE"
 $shortcut.Description = "PowerShell with admin privileges for dev environment tasks"
 $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,176"
@@ -345,10 +416,13 @@ Write-Host "[OK] PowerShell admin shortcut created in Start Menu" -ForegroundCol
 
 Write-Host "[STEP 8] Installing Windows-side helper and applying dotfiles..." -ForegroundColor Cyan
 
-& "$PSScriptRoot\scripts\install_virtualdesktop.ps1"
+$virtualDesktopOk = & "$PSScriptRoot\scripts\install_virtualdesktop.ps1"
+if (-not $virtualDesktopOk) {
+    Add-SetupWarning "VirtualDesktop.exe is unavailable; WezTerm/OpenCode will not be moved to the «Разработка» desktop."
+}
 
 $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
-$chezmoiExe = (Get-Command chezmoi.exe -ErrorAction SilentlyContinue).Source
+$chezmoiExe = (Get-Command chezmoi.exe -ErrorAction SilentlyContinue).Path
 if (-not $chezmoiExe) {
     $chezmoiExe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "chezmoi.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
 }
@@ -370,7 +444,7 @@ if ($chezmoiExe) {
     Write-Host "[OK] Windows-side dotfiles applied" -ForegroundColor Green
 }
 else {
-    Write-Warning "chezmoi.exe not found; Windows-side dotfiles were not applied."
+    Add-SetupWarning "chezmoi.exe not found; Windows-side dotfiles were not applied."
 }
 
 Write-Host "[STEP 9] Checking WSL2 prerequisites..." -ForegroundColor Cyan
@@ -395,7 +469,7 @@ if (-not $scheme) {
 # The lid action is hidden by default on some laptops; unhide it before setting.
 powercfg -attributes 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 -ATTRIB_HIDE
 
-# Closing the lid should keep the system running so SSH stays reachable.
+# Closing the lid should keep the system running.
 # 0 = Do nothing for the lid action.
 powercfg /setacvalueindex $scheme SUB_BUTTONS LIDACTION 0
 powercfg /setdcvalueindex $scheme SUB_BUTTONS LIDACTION 0
@@ -422,7 +496,7 @@ Set-Service w32time -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service w32time -ErrorAction SilentlyContinue
 w32tm /resync /force | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Write-Warning "Clock resync returned exit code $LASTEXITCODE."
+    Add-SetupWarning "Clock resync returned exit code $LASTEXITCODE."
 }
 Write-Host " -> Time zone: FLE Standard Time; clock resynced." -ForegroundColor Cyan
 
@@ -446,73 +520,32 @@ $result = [UIntPtr]::Zero
 
 Write-Host " -> Date/time format: HH:mm and dd.MM.yyyy." -ForegroundColor Cyan
 
-Write-Host "[STEP 13] Writing OpenCode global AGENTS.md..." -ForegroundColor Cyan
+Write-Host "[STEP 13] Configuring OpenCode Desktop startup..." -ForegroundColor Cyan
 
 $opencodeConfigDir = Join-Path $env:USERPROFILE ".config\opencode"
 New-Item -ItemType Directory -Path $opencodeConfigDir -Force | Out-Null
-$agents = @'
-# WSL projects
 
-Projects under `/home/__WSL_USER__/projects` live in WSL2 Debian. The OpenCode server runs on Windows.
-
-For any project in WSL, run shell commands through WSL:
-
-```sh
-wsl.exe -d Debian --cd <linux-project-path> -e bash -lc "<command>"
-```
-
-Use WSL's `docker`, `docker compose`, and `git`. Do not use Windows tools on
-the UNC path. Do not run PHP or Composer on the WSL host; use the project's PHP
-container instead:
-
-```sh
-docker compose exec -T php php <args>
-docker compose exec -T php composer <args>
-```
-
-Before running commands, read the project's own `AGENTS.md`/`README` and inspect
-its `Dockerfile`, `compose.yaml`/`docker-compose.yml`, and `.env`. Use the
-project's own PHP image/service and the PHP version/extensions it defines; do
-not assume the service is named `php` or substitute a generic container.
-Prefer the project's own commands/scripts (`Makefile`, Composer scripts,
-`bin/console`).
-
-Prefer relative paths in shell commands.
-
-The WSL login shell is `fish` and its config runs `cd ~`, so always use `-e` to
-keep `--cd` working.
-'@
-$agents = $agents.Replace('__WSL_USER__', $WslUser)
-$agents | Out-File -FilePath (Join-Path $opencodeConfigDir "AGENTS.md") -Encoding utf8 -Force
-Write-Host " -> Global OpenCode instructions written for /home/$WslUser/projects." -ForegroundColor Cyan
-
-Write-Host "[STEP 14] Configuring OpenCode service..." -ForegroundColor Cyan
-if ([string]::IsNullOrWhiteSpace($OpenCodePassword)) {
-    $OpenCodePassword = [guid]::NewGuid().ToString('N')
-}
-$passwordFile = Join-Path $opencodeConfigDir 'server-password'
-$OpenCodePassword | Set-Content -LiteralPath $passwordFile -NoNewline -Encoding Ascii
-
-$startService = Join-Path $opencodeConfigDir 'start-service.ps1'
-$startServiceContent = @'
-$ErrorActionPreference = 'Stop'
-$pw = (Get-Content "$env:USERPROFILE\.config\opencode\server-password" -Raw).Trim()
-$env:OPENCODE_SERVER_PASSWORD = $pw
-$oc = 'C:\Users\__WSL_USER__\AppData\Local\Microsoft\WinGet\Packages\Anomaly.OpenCode_Microsoft.Winget.Source_8wekyb3d8bbwe\opencode.exe'
-& $oc service start
-'@
-$startServiceContent = $startServiceContent.Replace('__WSL_USER__', [Environment]::UserName)
-$startServiceContent | Set-Content -LiteralPath $startService -Encoding Ascii
-
+# The shared OpenCode server now runs inside WSL (set up by Phase 2).
+# Remove the old Windows-side background service shortcut if it exists.
 $ws = New-Object -ComObject WScript.Shell
 $startup = [Environment]::GetFolderPath('Startup')
-$lnkPath = Join-Path $startup 'OpenCode Service.lnk'
-$lnk = $ws.CreateShortcut($lnkPath)
-$lnk.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-$lnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startService`""
-$lnk.WorkingDirectory = $env:USERPROFILE
-$lnk.Description = 'Start OpenCode 2 background service'
-$lnk.Save()
+$legacyServiceLnk = Join-Path $startup 'OpenCode Service.lnk'
+if (Test-Path -LiteralPath $legacyServiceLnk) {
+    Remove-Item -LiteralPath $legacyServiceLnk -Force -ErrorAction SilentlyContinue
+}
+$legacyStartService = Join-Path $opencodeConfigDir 'start-service.ps1'
+if (Test-Path -LiteralPath $legacyStartService) {
+    Remove-Item -LiteralPath $legacyStartService -Force -ErrorAction SilentlyContinue
+}
+
+# Remove the old Windows-server AGENTS.md if it was written by this setup.
+$legacyAgents = Join-Path $opencodeConfigDir 'AGENTS.md'
+if (Test-Path -LiteralPath $legacyAgents) {
+    $legacyAgentsContent = Get-Content -LiteralPath $legacyAgents -Raw -ErrorAction SilentlyContinue
+    if ($legacyAgentsContent -match 'The OpenCode server runs on Windows') {
+        Remove-Item -LiteralPath $legacyAgents -Force -ErrorAction SilentlyContinue
+    }
+}
 
 $desktopScript = Join-Path $opencodeConfigDir 'start-opencode-desktop.ps1'
 $desktopContent = @'
@@ -520,11 +553,24 @@ $ErrorActionPreference = 'SilentlyContinue'
 $app = Join-Path $env:LOCALAPPDATA 'Programs\@opencode-aidesktop\OpenCode.exe'
 $helper = Join-Path $env:USERPROFILE '.config\wezterm\move-wezterm-to-desktop.ps1'
 if (Test-Path -LiteralPath $app) {
+    # Wait briefly for the WSL OpenCode server, but do not block the desktop forever.
+    $deadline = (Get-Date).AddSeconds(30)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $tcp = New-Object System.Net.Sockets.TcpClient
+            $tcp.Connect('127.0.0.1', 4096)
+            $tcp.Close()
+            break
+        }
+        catch {
+            Start-Sleep -Seconds 1
+        }
+    }
     $p = Start-Process -FilePath $app -PassThru
-    if ($p) { & $helper -ProcessId $p.Id -DesktopName 'Разработка' }
+    if ($p) { & $helper -ProcessId $p.Id }
 }
 '@
-$desktopContent | Set-Content -LiteralPath $desktopScript -Encoding Ascii
+$desktopContent | Set-Content -LiteralPath $desktopScript -Encoding utf8
 
 $desktopLnkPath = Join-Path $startup 'OpenCode.lnk'
 $desktopLnk = $ws.CreateShortcut($desktopLnkPath)
@@ -533,6 +579,15 @@ $desktopLnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass 
 $desktopLnk.WorkingDirectory = $env:USERPROFILE
 $desktopLnk.Description = 'OpenCode Desktop on Разработка'
 $desktopLnk.Save()
-Write-Host " -> OpenCode service password, autostart and Desktop startup configured." -ForegroundColor Cyan
+Write-Host " -> OpenCode Desktop startup configured (server runs in WSL)." -ForegroundColor Cyan
 
-Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
+if ($script:setupWarnings.Count -gt 0) {
+    Write-Host "`n[WARN] Phase 1 completed with $($script:setupWarnings.Count) warning(s):" -ForegroundColor Yellow
+    foreach ($warning in $script:setupWarnings) {
+        Write-Host " - $warning" -ForegroundColor Yellow
+    }
+    Write-Host "[OK] Phase 1 core steps completed; review the warnings above." -ForegroundColor Yellow
+}
+else {
+    Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green
+}

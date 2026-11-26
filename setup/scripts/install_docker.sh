@@ -18,15 +18,23 @@ apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "Adding user ${USER_NAME} to docker group..."
-usermod -aG docker ${USER_NAME}
+usermod -aG docker "${USER_NAME}"
 
 echo "Starting Docker service..."
 service docker start
 
 echo "Waiting for Docker to be ready..."
-until docker info >/dev/null 2>&1; do
+for _ in $(seq 1 60); do
+    if docker info >/dev/null 2>&1; then
+        break
+    fi
     sleep 2
 done
+
+if ! docker info >/dev/null 2>&1; then
+    echo "Docker did not start within 120 seconds." >&2
+    exit 1
+fi
 
 echo "Docker installed: $(docker --version)"
 echo "Docker Compose: $(docker compose version)"

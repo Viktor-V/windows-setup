@@ -16,18 +16,35 @@ jobs:
       - name: Check PowerShell syntax
         shell: pwsh
         run: |
+          $failed = $false
           $scripts = Get-ChildItem -Path . -Recurse -Include *.ps1
           foreach ($script in $scripts) {
             Write-Host "Checking $($script.FullName)"
+            $tokens = $null
             $errors = $null
-            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script.FullName -Raw), [ref]$errors)
-            if ($errors) {
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $script.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
               Write-Host "ERRORS found:" -ForegroundColor Red
-              $errors | ForEach-Object { Write-Host $_ }
-              exit 1
+              $errors | ForEach-Object { Write-Host $_.Message }
             }
-            Write-Host "OK" -ForegroundColor Green
+            else {
+              Write-Host "OK" -ForegroundColor Green
+            }
           }
+          if ($failed) { exit 1 }
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          $results | Format-Table -AutoSize
+          if ($results) { exit 1 }
 
   bash:
     name: Bash Checks
