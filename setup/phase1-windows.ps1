@@ -504,16 +504,23 @@ powercfg /setacvalueindex $scheme SUB_SLEEP STANDBYIDLE 0
 powercfg /setdcvalueindex $scheme SUB_SLEEP STANDBYIDLE 0
 powercfg /setacvalueindex $scheme SUB_SLEEP HIBERNATEIDLE 0
 powercfg /setdcvalueindex $scheme SUB_SLEEP HIBERNATEIDLE 0
+
+# Turn the display off after one hour on AC and after 15 minutes on battery.
+# The lid action stays "do nothing", so closing the lid only turns the panel
+# off and OpenCode/WSL keep running.
+powercfg /setacvalueindex $scheme SUB_VIDEO VIDEOIDLE 3600
+powercfg /setdcvalueindex $scheme SUB_VIDEO VIDEOIDLE 900
 powercfg /setactive $scheme
 
-# Lock after a minute of inactivity; the closed lid already turns the display off.
+# Lock after one hour of inactivity. The display-off timeout above handles the
+# monitor; this screensaver handles the lock screen.
 $desktop = 'HKCU:\Control Panel\Desktop'
 Set-ItemProperty -Path $desktop -Name ScreenSaveActive -Value '1' -Force
 Set-ItemProperty -Path $desktop -Name ScreenSaverIsSecure -Value '1' -Force
-Set-ItemProperty -Path $desktop -Name ScreenSaveTimeOut -Value '60' -Force
+Set-ItemProperty -Path $desktop -Name ScreenSaveTimeOut -Value '3600' -Force
 Set-ItemProperty -Path $desktop -Name SCRNSAVE.EXE -Value 'C:\Windows\System32\scrnsave.scr' -Force
 
-Write-Host " -> Lid close: do nothing; sleep/hibernate disabled; screen locks after 60s." -ForegroundColor Cyan
+Write-Host " -> Lid close: do nothing; display off after 1h AC / 15m battery; lock after 1h." -ForegroundColor Cyan
 
 Write-Host "[STEP 11] Setting time zone and syncing clock..." -ForegroundColor Cyan
 tzutil /s "FLE Standard Time"

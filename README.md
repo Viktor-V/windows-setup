@@ -13,7 +13,7 @@ The setup has two main phases:
 - Installs essential applications via WinGet (7-Zip, ImageGlass, VLC, Git, WezTerm, chezmoi, etc.)
 - Installs **OpenCode CLI** and **OpenCode Desktop**
 - Applies visual customizations (black theme, disabled lock screen, etc.)
-- Keeps the machine awake when the lid closes and locks the screen after 60s of inactivity
+- Keeps the machine awake when the lid closes; display turns off after 1 hour on AC (15 minutes on battery), lock after 1 hour
 - Sets the Windows time zone to **FLE Standard Time** and resyncs the clock
 - Sets the taskbar date/time display format to `HH:mm` and `dd.MM.yyyy`
 - Downloads and installs **WezTerm** with **JetBrains Mono Nerd Font** and adds it to autostart
@@ -30,7 +30,7 @@ The setup has two main phases:
 - Configures **Fish** with Starship and useful aliases
 - Installs **OpenCode 2 CLI** and creates workspaces `~/projects/development` and `~/projects/common`
 - Runs the **OpenCode server inside WSL** at `http://localhost:4096`, protected by the server password
-- Starts the WSL OpenCode server automatically at Windows logon
+- Installs an enabled `opencode.service` systemd unit with `Restart=always`; WSL boot starts it automatically
 - Does not install PHP or Composer in WSL: project PHP/Composer runs inside Docker containers
 - Sets up **Docker** with Portainer at http://localhost:9000 and validates both after the WSL restart
 - Terminates and restarts WSL2 to apply `wsl.conf`, systemd, Docker, and the OpenCode service
@@ -126,11 +126,15 @@ or the pairing link. Prefer `ocpair` (OpenTunnel) over exposing the port on the 
 
 ### Server startup
 
-The `OpenCode WSL Server` shortcut in the Windows Startup folder starts the WSL
-service on every logon. A scheduled task named `OpenCode WSL Server Watchdog`
-checks it every five minutes and restarts it if needed. WSL must be running for the
-phone and Desktop clients to connect. If the service stops, run `ocstatus` or
-`opencode service start` in Debian.
+The `OpenCode WSL Server` shortcut in the Windows Startup folder boots WSL on
+every logon. Inside WSL, the enabled `opencode.service` systemd unit starts the
+server and restarts it with `Restart=always` if it dies. WSL must be running for
+the phone and Desktop clients to connect; check it with:
+
+```sh
+systemctl status opencode.service
+ocstatus
+```
 
 ### Security notes
 

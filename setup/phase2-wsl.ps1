@@ -310,32 +310,11 @@ done
 "$OPENCODE" service status
 curl -fsS --max-time 5 -u "opencode:$OC_PASSWORD" http://127.0.0.1:4096/api/info >/dev/null
 
-# Remove the helper from the old Windows-hosted server design.
-rm -f "$HOME/.local/bin/opencode-tui"
+# Remove helpers from the old Windows-hosted / watchdog designs.
+rm -f "$HOME/.local/bin/opencode-tui" "$HOME/.local/bin/opencode-service-start"
 '@
 $ocSetup = $ocSetup.Replace('__PASSWORD_B64__', $passwordB64)
 Invoke-WslBash -User $linuxUser -Command $ocSetup
-
-Write-Host " -> Installing OpenCode service helper..." -ForegroundColor Cyan
-$serviceStart = @'
-#!/usr/bin/env bash
-set -euo pipefail
-OPENCODE="$HOME/.opencode/bin/opencode"
-for _ in $(seq 1 30); do
-    if "$OPENCODE" service status >/dev/null 2>&1; then
-        exit 0
-    fi
-    "$OPENCODE" service start >/dev/null 2>&1 || true
-    sleep 2
-done
-exit 1
-'@
-$serviceStartB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($serviceStart -replace "`r`n", "`n")))
-Invoke-WslBash -User $linuxUser -Command @"
-mkdir -p ~/.local/bin
-printf '%s' '$serviceStartB64' | base64 -d > ~/.local/bin/opencode-service-start
-chmod +x ~/.local/bin/opencode-service-start
-"@
 
 Write-Host " -> Writing OpenCode instructions for WSL projects..." -ForegroundColor Cyan
 $agents = @'
@@ -377,9 +356,10 @@ Protect-SecretFile $windowsPasswordFile
 $startWslContent = @'
 $ErrorActionPreference = 'SilentlyContinue'
 $log = Join-Path $env:USERPROFILE '.config\opencode\wsl-server.log'
-& wsl.exe -d __DISTRO__ -u __USER__ --exec /home/__USER__/.local/bin/opencode-service-start *>> $log
+# Booting WSL starts the enabled opencode.service systemd unit.
+& wsl.exe -d __DISTRO__ --exec /bin/true *>> $log
 '@
-$startWslContent = $startWslContent.Replace('__DISTRO__', $distroName).Replace('__USER__', $linuxUser)
+$startWslContent = $startWslContent.Replace('__DISTRO__', $distroName)
 $startWslScript = Join-Path $opencodeConfigDir 'start-wsl-opencode.ps1'
 $startWslContent | Set-Content -LiteralPath $startWslScript -Encoding utf8
 
@@ -391,11 +371,24 @@ $lnk = $ws.CreateShortcut((Join-Path $startup 'OpenCode WSL Server.lnk'))
 $lnk.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $lnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startWslScript`""
 $lnk.WorkingDirectory = $env:USERPROFILE
-$lnk.Description = 'Start the OpenCode server inside WSL Debian'
+$lnk.Description = 'Boot WSL so the opencode systemd unit can start'
 $lnk.Save()
 
 $pairContent = @'
 $ErrorActionPreference = 'Stop'
+& wsl.exe -d __DISTRO__ --exec /bin/true | Out-Null
+$deadline = (Get-Date).AddSeconds(30)
+while ((Get-Date) -lt $deadline) {
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcp.Connect('127.0.0.1', 4096)
+        $tcp.Close()
+        break
+    }
+    catch {
+        Start-Sleep -Seconds 1
+    }
+}
 Write-Host "Generating a one-time OpenCode remote pairing link..." -ForegroundColor Cyan
 & wsl.exe -d __DISTRO__ -u __USER__ -e bash -lc 'cd ~ && opencode pair --remote'
 Write-Host ''
@@ -412,43 +405,13 @@ $pairLnk.WorkingDirectory = $env:USERPROFILE
 $pairLnk.Description = 'Pair OpenCode Desktop or a phone with the WSL server'
 $pairLnk.Save()
 
-# Restart the WSL OpenCode service if it dies while the user is logged on.
-try {
-    $watchdogName = 'OpenCode WSL Server Watchdog'
-    $watchdogAction = New-ScheduledTaskAction `
-        -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
-        -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startWslScript`""
-    $watchdogTrigger = New-ScheduledTaskTrigger `
-        -Once `
-        -At (Get-Date).AddMinutes(1) `
-        -RepetitionInterval (New-TimeSpan -Minutes 5) `
-        -RepetitionDuration (New-TimeSpan -Days 3650)
-    $watchdogPrincipal = New-ScheduledTaskPrincipal `
-        -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) `
-        -LogonType Interactive `
-        -RunLevel Limited
-    $watchdogSettings = New-ScheduledTaskSettingsSet `
-        -AllowStartIfOnBatteries `
-        -DontStopIfGoingOnBatteries `
-        -StartWhenAvailable `
-        -MultipleInstances IgnoreNew `
-        -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+# systemd owns restart behavior now; remove the old Windows watchdog if present.
+Unregister-ScheduledTask `
+    -TaskName 'OpenCode WSL Server Watchdog' `
+    -Confirm:$false `
+    -ErrorAction SilentlyContinue
 
-    Register-ScheduledTask `
-        -TaskName $watchdogName `
-        -Action $watchdogAction `
-        -Trigger $watchdogTrigger `
-        -Principal $watchdogPrincipal `
-        -Settings $watchdogSettings `
-        -Description 'Check the WSL-hosted OpenCode server every five minutes' `
-        -Force | Out-Null
-    Write-Host " -> OpenCode watchdog task installed." -ForegroundColor Cyan
-}
-catch {
-    Write-Warning "Could not register the OpenCode watchdog task: $($_.Exception.Message)"
-}
-
-Write-Host " -> OpenCode server: http://localhost:4096 (WSL), autostart enabled." -ForegroundColor Cyan
+Write-Host " -> OpenCode server: http://localhost:4096 (WSL), systemd autostart enabled." -ForegroundColor Cyan
 
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
@@ -496,8 +459,8 @@ done
 curl -fsS --max-time 5 http://127.0.0.1:9000 >/dev/null
 '@
 
-# Start the OpenCode service after the WSL restart as well.
-Invoke-WslBash -User $linuxUser -Command '"$HOME/.local/bin/opencode-service-start"'
+Write-Host " -> Installing the OpenCode systemd unit..." -ForegroundColor Cyan
+Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode_service.sh")
 
 # Verify that Debian starts, the default user exists, and Windows can reach
 # the WSL-hosted OpenCode server through localhost forwarding.
@@ -511,7 +474,7 @@ $opencodeReachable = $false
 $basicAuth = [Convert]::ToBase64String(
     [Text.Encoding]::ASCII.GetBytes("opencode:$OpenCodePassword")
 )
-for ($i = 1; $i -le 10; $i++) {
+for ($i = 1; $i -le 30; $i++) {
     try {
         $response = Invoke-WebRequest `
             -Uri "http://localhost:4096/api/info" `

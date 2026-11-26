@@ -31,11 +31,12 @@ Use a Windows 11 VM snapshot. Run `setup.ps1` as Administrator and verify:
 - OpenCode is running and authenticated:
 
   ```sh
+  systemctl status opencode.service
   opencode service status
-  opencode api get /api/info
   ```
 
-- `OpenCode WSL Server` and `OpenCode WSL Server Watchdog` exist in Task Scheduler.
+- `opencode.service` is enabled and uses `Restart=always`.
+- `OpenCode WSL Server` exists in the Windows Startup folder.
 - `OpenCode Pair` exists in the Start menu.
 
 ## Clients
@@ -43,10 +44,16 @@ Use a Windows 11 VM snapshot. Run `setup.ps1` as Administrator and verify:
 - `opencode pair` link opens the web UI and can be pasted into OpenCode Desktop.
 - `opencode pair --remote` prints a QR/link that an iPhone client can scan.
 - A desktop session created from the phone is visible on the PC and vice versa.
-- Stop the WSL OpenCode process, wait for the watchdog, and verify that
-  `ocstatus` reports a running service again.
+- Kill the OpenCode main process and verify that systemd restarts it:
+
+  ```sh
+  sudo systemctl kill -s SIGKILL opencode.service
+  sleep 10
+  systemctl status opencode.service
+  ```
 
 ## Logs
 
+- `journalctl -u opencode.service`
 - `%USERPROFILE%\.config\opencode\wsl-server.log`
 - `%LOCALAPPDATA%\VirtualDesktop\wezterm-desktop.log`
