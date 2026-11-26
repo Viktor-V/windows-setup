@@ -1,4 +1,7 @@
 ﻿# phase1-windows.ps1 - Windows Configuration & Applications
+param(
+    [string]$WslUser = "user"
+)
 
 Write-Host "[STEP 2] Applying Windows 11 interface and black personalization tweaks..." -ForegroundColor Cyan
 
@@ -109,6 +112,9 @@ foreach ($app in $exeApps) {
     Write-Host " -> Installing $app..." -ForegroundColor Yellow
     winget install --id $app -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade 
 }
+
+Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Yellow
+winget install --id Anomaly.OpenCode -e --accept-source-agreements --accept-package-agreements --silent --no-upgrade
 
 Write-Host " -> Enabling WezTerm autostart..." -ForegroundColor Yellow
 $weztermExe = "$env:ProgramFiles\WezTerm\wezterm-gui.exe"
@@ -439,32 +445,37 @@ $result = [UIntPtr]::Zero
 
 Write-Host " -> Date/time format: HH:mm and dd.MM.yyyy." -ForegroundColor Cyan
 
-Write-Host "[STEP 13] Adding WSL/Tailscale resume task..." -ForegroundColor Cyan
+Write-Host "[STEP 13] Writing OpenCode global AGENTS.md..." -ForegroundColor Cyan
 
-try {
-    $resumeDir = 'C:\ProgramData\windows-setup'
-    New-Item -ItemType Directory -Path $resumeDir -Force | Out-Null
-    $resumeScript = Join-Path $resumeDir 'resume-wsl-tailscale.ps1'
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'scripts\resume-wsl-tailscale.ps1') -Destination $resumeScript -Force
+$opencodeConfigDir = Join-Path $env:USERPROFILE ".config\opencode"
+New-Item -ItemType Directory -Path $opencodeConfigDir -Force | Out-Null
+$agents = @'
+# WSL projects
 
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $resumeAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$resumeScript`""
-    $resumeQuery = @"
-<QueryList>
-  <Query Id="0" Path="System">
-    <Select Path="System">*[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter'] and EventID=1]]</Select>
-  </Query>
-</QueryList>
-"@
-    $eventClass = Get-CimClass -ClassName MSFT_TaskEventTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
-    $resumeTrigger = New-CimInstance -CimClass $eventClass -ClientOnly -Property @{ Enabled = $true; Subscription = $resumeQuery }
-    $resumePrincipal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
-    $resumeSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
-    Register-ScheduledTask -TaskName 'ResumeWSLTailscale' -Action $resumeAction -Trigger $resumeTrigger -Principal $resumePrincipal -Settings $resumeSettings -Description 'Start WSL and reconnect Tailscale after sleep' -Force | Out-Null
-    Write-Host " -> Resume task registered." -ForegroundColor Cyan
-}
-catch {
-    Write-Warning "Could not register resume task: $($_.Exception.Message)"
-}
+Projects under `/home/__WSL_USER__/projects` live in WSL2 Debian. The OpenCode server runs on Windows.
+
+For any project in WSL, run shell commands through WSL:
+
+```sh
+wsl.exe -d Debian --cd <linux-project-path> -e bash -lc "<command>"
+```
+
+Use WSL's `docker`, `docker compose`, and `git`. Do not use Windows tools on
+the UNC path. Do not run PHP or Composer on the WSL host; use the project's PHP
+container instead:
+
+```sh
+docker compose exec -T php php <args>
+docker compose exec -T php composer <args>
+```
+
+Prefer relative paths in shell commands.
+
+The WSL login shell is `fish` and its config runs `cd ~`, so always use `-e` to
+keep `--cd` working.
+'@
+$agents = $agents.Replace('__WSL_USER__', $WslUser)
+$agents | Out-File -FilePath (Join-Path $opencodeConfigDir "AGENTS.md") -Encoding utf8 -Force
+Write-Host " -> Global OpenCode instructions written for /home/$WslUser/projects." -ForegroundColor Cyan
 
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green

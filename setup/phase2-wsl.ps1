@@ -3,9 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Password,
     [Parameter(Mandatory = $true)]
-    [string]$Username,
-    [string]$SshPubKey = "",
-    [switch]$TailscaleLogin
+    [string]$Username
 )
 
 $ErrorActionPreference = "Stop"
@@ -226,36 +224,13 @@ Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_chezmoi.sh"
 Write-Host " -> Deploying Portainer container..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_portainer.sh")
 
-Write-Host " -> Installing Herdr..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_herdr.sh")
-
-Write-Host " -> Installing OpenCode CLI..." -ForegroundColor Cyan
+Write-Host " -> Installing OpenCode 2 CLI..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_opencode.sh")
 
-Write-Host " -> Configuring Herdr..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\configure_herdr.sh")
-
-Write-Host " -> Installing Tailscale..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_tailscale.sh")
-
-if ($TailscaleLogin) {
-    Write-Host " -> Waiting for Tailscale login..." -ForegroundColor Cyan
-    Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\invite_tailscale_login.sh")
-}
-
-Write-Host " -> Configuring WSL SSH server..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_wsl_ssh.sh")
-
-if (-not [string]::IsNullOrWhiteSpace($SshPubKey)) {
-    Write-Host " -> Adding phone SSH public key..." -ForegroundColor Cyan
-    $sshKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($SshPubKey.Trim() + "`n"))
-    Invoke-WslBash -User $linuxUser -Command @"
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-printf '%s' '$sshKeyB64' | base64 -d >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
+Write-Host " -> Creating workspaces..." -ForegroundColor Cyan
+Invoke-WslBash -User $linuxUser -Command @"
+mkdir -p ~/projects/development ~/projects/common
 "@
-}
 
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")
@@ -276,8 +251,5 @@ Invoke-Wsl -Arguments @(
     "--cd", "/home/$linuxUser",
     "--exec", "id", $linuxUser
 )
-
-Write-Host " -> Finalizing Herdr..." -ForegroundColor Cyan
-Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\finalize_herdr.sh")
 
 Write-Host "`n[OK] Phase 2 completed successfully!" -ForegroundColor Green

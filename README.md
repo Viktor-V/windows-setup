@@ -27,8 +27,8 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs base packages: git, neovim, ripgrep, fzf, python3-pip, fish, Docker, etc.
 - Installs development tools: **Starship** prompt, **dblab** TUI database client
 - Configures **Fish** shell with Starship integration and useful aliases
-- Installs **Herdr** and **OpenCode CLI**, enables the persistent Herdr server via systemd, and creates workspaces `Development`, `Translation`, `Common`
-- Installs **Tailscale** and **OpenSSH server** inside WSL for direct SSH access from a phone
+- Installs **OpenCode 2 CLI** in WSL and creates workspaces `~/projects/development` and `~/projects/common`
+- Does not install PHP or Composer in WSL: project PHP/Composer runs inside Docker containers
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
 
@@ -48,73 +48,20 @@ This project automates the complete configuration of a Windows 11 machine for de
 
 3. Enter password when prompted
 
-4. Optionally paste the phone's SSH public key and choose whether to log in to Tailscale during Phase 2
+4. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
 
-5. Confirm reboot when asked (Phase 1 requires reboot to initialize WSL2)
+5. After reboot, login to Windows and the setup will automatically continue with Phase 2
 
-6. After reboot, login to Windows and the setup will automatically continue with Phase 2
-
-7. Once complete:
+6. Once complete:
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + JetBrains Mono Font
    - Login with your chosen username
-   - WezTerm opens on «Консоль» and starts Herdr; run `opencode` inside a workspace and use `/connect` to add model providers
-
-## Phone Access (Tailscale + SSH)
-
-Remote access goes directly to the WSL Tailscale node; the Windows OpenSSH server is not used. The WSL SSH server runs command channels through `bash` and interactive sessions through `fish`, which clients like HerdrChat need for their POSIX commands.
-
-1. In WSL, log in to Tailscale:
-
-   ```sh
-   sudo tailscale up
-   ```
-
-   Open the printed URL and sign in with your Tailscale account. If you chose to log in during setup, this is already done.
-
-2. Get the WSL Tailscale IP:
-
-   ```sh
-   tailscale ip -4
-   ```
-
-3. Add the phone's SSH public key:
-
-   ```sh
-   mkdir -p ~/.ssh && chmod 700 ~/.ssh
-   echo 'ssh-ed25519 ...' >> ~/.ssh/authorized_keys
-   chmod 600 ~/.ssh/authorized_keys
-   ```
-
-   If you provided the key during setup, this is already done.
-
-4. In an SSH client on the phone (Termius, WebSSH, ShellFish, a-Shell, etc.):
-
-   - Host: the WSL Tailscale IP
-   - Port: `22`
-   - User: your Linux username
-   - Connection type: **SSH**
-
-5. After login, run `herdr`. It attaches to the persistent session.
-
-The WSL node must be running. WezTerm autostarts on «Консоль», launches Herdr, and keeps WSL and its systemd services up.
-
-### HerdrChat push notifications
-
-1. In HerdrChat, open **Settings → Notifications** and turn notifications on.
-2. Accept the offered watcher installation on the host.
-3. The app writes the device token over SSH; the watcher runs as a systemd user service and sends pushes through the HerdrChat relay.
-
-The setup enables systemd lingering for the WSL user so the watcher keeps running without an active login. Check it with:
-
-```sh
-systemctl --user status dev.herdr.herdrchat-notifier
-```
+   - WezTerm opens on «Консоль» with fish; OpenCode 2 runs as a Windows background service
 
 ## Projects & Tools Installed
 
 ### Windows Applications
-- 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm, chezmoi
+- 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm, chezmoi, OpenCode CLI
 - Downloads `VirtualDesktop.exe` for the WezTerm virtual-desktop helper (opens on the Windows desktop «Консоль»)
 
 ### Linux/WSL2 Tools
@@ -122,8 +69,8 @@ systemctl --user status dev.herdr.herdrchat-notifier
 - Prompt: Starship
 - Database client: dblab
 - Container management: Docker, Portainer
-- Agent workspace: Herdr (persistent server + systemd service), OpenCode CLI
-- Remote access: Tailscale (WSL node), OpenSSH server (WSL)
+- Agent workspace: OpenCode 2 CLI, workspaces `development` and `common`
+- PHP/Composer: only inside project Docker containers
 - TUI tools: btop, lazygit, zoxide, atuin, bat
 - Dotfiles manager: chezmoi
 

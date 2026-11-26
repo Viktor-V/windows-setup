@@ -11,6 +11,6 @@ if [ -x "$OPENCODE_BIN" ]; then
 fi
 
 echo "Installing OpenCode for $USER_NAME..."
-sudo -H -u "$USER_NAME" bash -c 'curl -fsSL https://opencode.ai/install | bash -s -- --no-modify-path'
+sudo -H -u "$USER_NAME" bash -c 'curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path'
 
 echo "OpenCode installed: $("$OPENCODE_BIN" --version 2>/dev/null || echo 'version unknown')"
