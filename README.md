@@ -57,13 +57,13 @@ This project automates the complete configuration of a Windows 11 machine for de
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + JetBrains Mono Font
    - Login with your chosen username
-   - WezTerm opens on «Консоль» with fish; OpenCode 2 runs as a Windows background service
+   - WezTerm and OpenCode Desktop open on «Разработка»; OpenCode 2 runs as a Windows background service
 
 ## Projects & Tools Installed
 
 ### Windows Applications
 - 7-Zip, ImageGlass, VLC, Flow-Launcher, Git, WezTerm, chezmoi, OpenCode CLI
-- Downloads `VirtualDesktop.exe` for the WezTerm virtual-desktop helper (opens on the Windows desktop «Консоль»)
+- Downloads `VirtualDesktop.exe` for the WezTerm/OpenCode virtual-desktop helper (opens on the Windows desktop «Разработка»)
 
 ### Linux/WSL2 Tools
 - Base: git, neovim, ripgrep, fzf, python3-pip, fish, wl-clipboard, Docker, sudo
