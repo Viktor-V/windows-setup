@@ -469,6 +469,13 @@ docker compose exec -T php php <args>
 docker compose exec -T php composer <args>
 ```
 
+Before running commands, read the project's own `AGENTS.md`/`README` and inspect
+its `Dockerfile`, `compose.yaml`/`docker-compose.yml`, and `.env`. Use the
+project's own PHP image/service and the PHP version/extensions it defines; do
+not assume the service is named `php` or substitute a generic container.
+Prefer the project's own commands/scripts (`Makefile`, Composer scripts,
+`bin/console`).
+
 Prefer relative paths in shell commands.
 
 The WSL login shell is `fish` and its config runs `cd ~`, so always use `-e` to

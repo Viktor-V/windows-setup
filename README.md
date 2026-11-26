@@ -29,6 +29,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Configures **Fish** shell with Starship integration and useful aliases
 - Installs **OpenCode 2 CLI** in WSL and creates workspaces `~/projects/development` and `~/projects/common`
 - Does not install PHP or Composer in WSL: project PHP/Composer runs inside Docker containers
+- Agents read the project's `AGENTS.md`/README and `Dockerfile`/compose, then use the project's own PHP service/image (not a generic container)
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
 
