@@ -141,6 +141,31 @@ if ($script:wingetFailures.Count -gt 0) {
     Write-Warning "Some applications could not be installed. Review the warnings above before continuing."
 }
 
+Write-Host " -> Disabling the Windows OpenCode background service..." -ForegroundColor Yellow
+$windowsOpenCode = (Get-Command opencode.exe -ErrorAction SilentlyContinue).Path
+if (-not $windowsOpenCode) {
+    $windowsOpenCode = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" `
+        -Filter "opencode.exe" `
+        -Recurse `
+        -ErrorAction SilentlyContinue |
+        Select-Object -First 1 -ExpandProperty FullName
+}
+if ($windowsOpenCode) {
+    # The shared server lives in WSL. Leaving a Windows server running would
+    # take over localhost and make Desktop talk to the wrong instance.
+    & $windowsOpenCode service stop 2>$null | Out-Null
+    & $windowsOpenCode service set disabled true 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Add-SetupWarning "Could not disable the Windows OpenCode background service."
+    }
+    else {
+        Write-Host "   Windows OpenCode service disabled; WSL is the only server." -ForegroundColor Cyan
+    }
+}
+else {
+    Add-SetupWarning "opencode.exe not found; could not disable the Windows background service."
+}
+
 Write-Host " -> Enabling WezTerm autostart..." -ForegroundColor Yellow
 $weztermExe = (Get-Command wezterm-gui.exe -ErrorAction SilentlyContinue).Path
 if (-not $weztermExe) {
@@ -558,7 +583,7 @@ if (Test-Path -LiteralPath $app) {
     while ((Get-Date) -lt $deadline) {
         try {
             $tcp = New-Object System.Net.Sockets.TcpClient
-            $tcp.Connect('127.0.0.1', 4096)
+            $tcp.Connect('127.0.0.1', 4097)
             $tcp.Close()
             break
         }

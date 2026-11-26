@@ -20,7 +20,7 @@ The setup has two main phases:
 - Applies Windows-side dotfiles (WezTerm, Flow Launcher, virtual-desktop helper)
 - Creates a PowerShell admin profile and a `PowerShell Admin` shortcut
 - Downloads `VirtualDesktop.exe` for the WezTerm/OpenCode virtual-desktop helper
-- Prepares WSL2 and removes the old Windows-hosted OpenCode service
+- Prepares WSL2, removes the old Windows-hosted OpenCode shortcut, and disables the Windows background service so it cannot take over `localhost`
 
 ### Phase 2: WSL2 & Linux Environment
 - Sets up **Debian WSL2** as the default distribution with Fish shell
@@ -29,7 +29,7 @@ The setup has two main phases:
 - Installs development tools: **Starship**, **dblab**, **btop**, **lazygit**, **zoxide**, **atuin**, **bat**
 - Configures **Fish** with Starship and useful aliases
 - Installs **OpenCode 2 CLI** and creates workspaces `~/projects/development` and `~/projects/common`
-- Runs the **OpenCode server inside WSL** at `http://localhost:4096`, protected by the server password
+- Runs the **OpenCode server inside WSL** at `http://localhost:4097`, protected by the server password
 - Starts the WSL OpenCode server automatically at Windows logon
 - Does not install PHP or Composer in WSL: project PHP/Composer runs inside Docker containers
 - Sets up **Docker** with Portainer at http://localhost:9000 and validates both after the WSL restart
@@ -60,14 +60,15 @@ The setup has two main phases:
 6. Once complete:
    - Portainer UI at http://localhost:9000
    - Open Debian terminal to see Fish + JetBrains Mono Font
-   - OpenCode server at http://localhost:4096 (inside WSL)
+   - OpenCode server at http://localhost:4097 (inside WSL)
    - WezTerm and OpenCode Desktop open on «Разработка»
 
 ## OpenCode: Desktop, Web, and Phone
 
 The OpenCode server runs in WSL, next to the projects, so file tools and terminals see
 `/home/<user>/projects` directly. The Windows OpenCode Desktop and the phone app are
-clients for that server.
+clients for that server. The WSL server uses port **4097** to avoid colliding with a
+Windows OpenCode background service, and Phase 1 disables the Windows service.
 
 ### Desktop and browser
 
@@ -80,14 +81,14 @@ opencode pair
 Paste the one-time link into OpenCode Desktop → Settings → Pairing, or open it in a
 browser for the web UI. The link expires after 5 minutes and works once.
 
-For a direct connection, use `http://localhost:4096` as the server address and the
+For a direct connection, use `http://localhost:4097` as the server address and the
 password from:
 
 - WSL: `~/.config/opencode/server-password`
 - Windows: `%USERPROFILE%\.config\opencode\server-password`
 
-If Windows cannot reach `localhost:4096`, use the WSL address printed by
-`wsl hostname -I` instead (`http://<wsl-ip>:4096`).
+If Windows cannot reach `localhost:4097`, use the WSL address printed by
+`wsl hostname -I` instead (`http://<wsl-ip>:4097`).
 
 ### Phone
 
