@@ -30,6 +30,7 @@ This project automates the complete configuration of a Windows 11 machine for de
 - Installs **OpenCode 2 CLI** in WSL and creates workspaces `~/projects/development` and `~/projects/common`
 - Does not install PHP or Composer in WSL: project PHP/Composer runs inside Docker containers
 - Agents read the project's `AGENTS.md`/README and `Dockerfile`/compose, then use the project's own PHP service/image (not a generic container)
+- OpenCode server password: setup asks for one, or generates a random one if left empty; stores it, enables service autostart, and installs the WSL TUI helper
 - Sets up **Docker** with Portainer container (accessible at http://localhost:9000)
 - Terminates and restarts WSL2 to apply configuration
 

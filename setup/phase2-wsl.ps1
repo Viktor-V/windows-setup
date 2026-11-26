@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Password,
     [Parameter(Mandatory = $true)]
-    [string]$Username
+    [string]$Username,
+    [string]$OpenCodePassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -231,6 +232,28 @@ Write-Host " -> Creating workspaces..." -ForegroundColor Cyan
 Invoke-WslBash -User $linuxUser -Command @"
 mkdir -p ~/projects/development ~/projects/common
 "@
+
+if (-not [string]::IsNullOrWhiteSpace($OpenCodePassword)) {
+    Write-Host " -> Installing OpenCode TUI helper..." -ForegroundColor Cyan
+    $passwordB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($OpenCodePassword))
+    $tuiHelper = @'
+#!/usr/bin/env bash
+set -euo pipefail
+password=$(cat "$HOME/.config/opencode/server-password")
+host=$(ip route | awk '/^default/ {print $3; exit}')
+export OPENCODE_PASSWORD="$password"
+exec /home/__WSL_USER__/.opencode/bin/opencode --server "http://$host:4096" "$@"
+'@
+    $tuiHelper = $tuiHelper.Replace('__WSL_USER__', $linuxUser)
+    $tuiB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($tuiHelper -replace "`r`n", "`n")))
+    Invoke-WslBash -User $linuxUser -Command @"
+mkdir -p ~/.config/opencode ~/.local/bin
+printf '%s' '$passwordB64' | base64 -d > ~/.config/opencode/server-password
+chmod 600 ~/.config/opencode/server-password
+printf '%s' '$tuiB64' | base64 -d > ~/.local/bin/opencode-tui
+chmod +x ~/.local/bin/opencode-tui
+"@
+}
 
 Write-Host " -> Applying dotfiles with chezmoi..." -ForegroundColor Cyan
 Invoke-WslScriptFile -Path (Join-Path $PSScriptRoot "scripts\install_dotfiles.sh")

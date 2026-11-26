@@ -1,6 +1,7 @@
 ﻿# phase1-windows.ps1 - Windows Configuration & Applications
 param(
-    [string]$WslUser = "user"
+    [string]$WslUser = "user",
+    [string]$OpenCodePassword = ""
 )
 
 Write-Host "[STEP 2] Applying Windows 11 interface and black personalization tweaks..." -ForegroundColor Cyan
@@ -484,5 +485,54 @@ keep `--cd` working.
 $agents = $agents.Replace('__WSL_USER__', $WslUser)
 $agents | Out-File -FilePath (Join-Path $opencodeConfigDir "AGENTS.md") -Encoding utf8 -Force
 Write-Host " -> Global OpenCode instructions written for /home/$WslUser/projects." -ForegroundColor Cyan
+
+Write-Host "[STEP 14] Configuring OpenCode service..." -ForegroundColor Cyan
+if ([string]::IsNullOrWhiteSpace($OpenCodePassword)) {
+    $OpenCodePassword = [guid]::NewGuid().ToString('N')
+}
+$passwordFile = Join-Path $opencodeConfigDir 'server-password'
+$OpenCodePassword | Set-Content -LiteralPath $passwordFile -NoNewline -Encoding Ascii
+
+$startService = Join-Path $opencodeConfigDir 'start-service.ps1'
+$startServiceContent = @'
+$ErrorActionPreference = 'Stop'
+$pw = (Get-Content "$env:USERPROFILE\.config\opencode\server-password" -Raw).Trim()
+$env:OPENCODE_SERVER_PASSWORD = $pw
+$oc = 'C:\Users\__WSL_USER__\AppData\Local\Microsoft\WinGet\Packages\Anomaly.OpenCode_Microsoft.Winget.Source_8wekyb3d8bbwe\opencode.exe'
+& $oc service start
+'@
+$startServiceContent = $startServiceContent.Replace('__WSL_USER__', [Environment]::UserName)
+$startServiceContent | Set-Content -LiteralPath $startService -Encoding Ascii
+
+$ws = New-Object -ComObject WScript.Shell
+$startup = [Environment]::GetFolderPath('Startup')
+$lnkPath = Join-Path $startup 'OpenCode Service.lnk'
+$lnk = $ws.CreateShortcut($lnkPath)
+$lnk.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$lnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startService`""
+$lnk.WorkingDirectory = $env:USERPROFILE
+$lnk.Description = 'Start OpenCode 2 background service'
+$lnk.Save()
+
+$desktopScript = Join-Path $opencodeConfigDir 'start-opencode-desktop.ps1'
+$desktopContent = @'
+$ErrorActionPreference = 'SilentlyContinue'
+$app = Join-Path $env:LOCALAPPDATA 'Programs\@opencode-aidesktop\OpenCode.exe'
+$helper = Join-Path $env:USERPROFILE '.config\wezterm\move-wezterm-to-desktop.ps1'
+if (Test-Path -LiteralPath $app) {
+    $p = Start-Process -FilePath $app -PassThru
+    if ($p) { & $helper -ProcessId $p.Id -DesktopName 'Разработка' }
+}
+'@
+$desktopContent | Set-Content -LiteralPath $desktopScript -Encoding Ascii
+
+$desktopLnkPath = Join-Path $startup 'OpenCode.lnk'
+$desktopLnk = $ws.CreateShortcut($desktopLnkPath)
+$desktopLnk.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$desktopLnk.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$desktopScript`""
+$desktopLnk.WorkingDirectory = $env:USERPROFILE
+$desktopLnk.Description = 'OpenCode Desktop on Разработка'
+$desktopLnk.Save()
+Write-Host " -> OpenCode service password, autostart and Desktop startup configured." -ForegroundColor Cyan
 
 Write-Host "`n[OK] Phase 1 completed successfully!" -ForegroundColor Green

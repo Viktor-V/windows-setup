@@ -84,6 +84,20 @@ if (-not $SkipPhase1 -and (-not (Test-Path $passwordFile) -or -not (Test-Path $u
 
     Write-Host "[OK] Password saved for Phase 2" -ForegroundColor Green
 
+    Write-Host "`n[OpenCode] Server password" -ForegroundColor Yellow
+    Write-Host "Press Enter to generate a random password, or type your own." -ForegroundColor White
+    $ocSecure = Read-Host -AsSecureString
+    $ocPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ocSecure)
+    )
+    if ([string]::IsNullOrWhiteSpace($ocPassword)) {
+        $ocPassword = [guid]::NewGuid().ToString('N')
+        Write-Host "[OK] Generated OpenCode server password." -ForegroundColor Green
+    }
+    else {
+        Write-Host "[OK] OpenCode server password saved." -ForegroundColor Green
+    }
+    $ocPassword | Out-File -FilePath (Join-Path $stageDir "opencode_password.txt") -Force -Encoding ascii
 }
 
 # PHASE 1: Windows Setup
@@ -92,7 +106,7 @@ if (-not $SkipPhase1) {
     Write-Host "   PHASE 1: Windows Configuration & Applications" -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
 
-    & "$PSScriptRoot\phase1-windows.ps1" -WslUser $Username
+    & "$PSScriptRoot\phase1-windows.ps1" -WslUser $Username -OpenCodePassword $ocPassword
 
     if (-not $?) {
         Write-Host "[ERROR] Phase 1 failed!" -ForegroundColor Red
@@ -197,8 +211,11 @@ if (-not $SkipPhase2 -or (Test-Path $phase1Marker)) {
         $Username = Get-Content $usernameFile | Select-Object -First 1
     }
 
+    $ocPasswordFile = Join-Path $stageDir "opencode_password.txt"
+    $ocPassword = if (Test-Path $ocPasswordFile) { (Get-Content $ocPasswordFile -Raw).Trim() } else { "" }
+
     try {
-        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username
+        & "$PSScriptRoot\phase2-wsl.ps1" -Password $password -Username $Username -OpenCodePassword $ocPassword
 
         if (-not $?) {
             throw "Phase 2 script returned an error."
